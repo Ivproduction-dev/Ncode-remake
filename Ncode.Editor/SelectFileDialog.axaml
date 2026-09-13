@@ -1,0 +1,13 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Ncode.Editor.SelectFileDialog"
+        Title="Открыть файл" Width="400" Height="180" WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="16" Spacing="10" Background="#1E1E2E">
+        <TextBlock Text="game.ncode не найден. Что открыть?" FontWeight="SemiBold" Foreground="#CDD6F4"/>
+        <ComboBox Name="FileCombo" HorizontalAlignment="Stretch" Background="#11111B" Foreground="#CDD6F4"/>
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Name="CancelButton2" Content="Отмена"/>
+            <Button Name="OpenButton" Classes="accent" Content="Открыть"/>
+        </StackPanel>
+    </StackPanel>
+</Window>
