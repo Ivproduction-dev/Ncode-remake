@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 class BreakException : Exception { }
+class ContinueException : Exception { }
+class ExitException : Exception { }
 
 record Line(string Text, int No);
 
@@ -9,7 +11,18 @@ class Program
 {
     static Dictionary<string, object> Vars = new();
     static Dictionary<string, List<List<Line>>> Handlers = new(StringComparer.OrdinalIgnoreCase);
+    static List<List<Line>> OnStarts = new();
     static int BroadcastDepth = 0;
+
+    class Trigger
+    {
+        public string Cond = "";
+        public List<Line> Body = new();
+        public int No;
+        public bool Last;
+    }
+    static List<Trigger> Triggers = new();
+    static int TriggerDepth = 0;
 
     static Regex NameRegex = new(@"^[A-Za-zА-Яа-яЁё_][A-Za-zА-Яа-яЁё0-9_]*$");
     static Regex QuotedFull = new("^\"([^\"]*)\"$");
@@ -36,9 +49,24 @@ class Program
     static bool IsFor(string t) => StartsWithWord(t, "для");
     static bool IsForever(string t) => Regex.IsMatch(t.Trim(), @"^вечно\s+повторя", RegexOptions.IgnoreCase);
     static bool IsWhen(string t) => StartsWithWord(t, "когда");
+    static bool IsOnStart(string t) => StartsWithWord(t, "при запуске", "при старте");
+    static bool IsTrigger(string t) => StartsWithWord(t, "как только");
     static bool IsElse(string t) => StartsWithWord(t, "иначе");
+    static bool IsElseIf(string t)
+    {
+        var m = Regex.Match(t.Trim(), @"^иначе\b", RegexOptions.IgnoreCase);
+        if (!m.Success) return false;
+        return StartsWithWord(t.Trim()[m.Length..].Trim(), "если", "эсли");
+    }
     static bool IsEnd(string t) => StartsWithWord(t, "конец");
-    static bool IsBreak(string t) => StartsWithWord(t, "остановить", "останови", "прервать", "прерви", "выйти", "выход", "стоп");
+    static bool IsBreak(string t) => StartsWithWord(t, "остановить", "останови", "прервать", "прерви", "стоп");
+    static bool IsContinue(string t) => StartsWithWord(t, "продолжить", "продолжи");
+    static bool IsExit(string t) => StartsWithWord(t, "выход", "выйти", "закончить", "завершить");
+    static bool IsDelete(string t) => StartsWithWord(t, "удалить", "удали");
+    static bool IsClear(string t) => StartsWithWord(t, "очистить", "очисти");
+    static bool IsWriteFile(string t) => StartsWithWord(t, "записать", "запиши");
+    static bool IsReadFile(string t) => StartsWithWord(t, "прочитать", "прочитай");
+    static bool IsInclude(string t) => StartsWithWord(t, "подключить", "подключи");
     static bool IsBroadcast(string t) => StartsWithWord(t, "вещать");
     static bool IsSet(string t) => StartsWithWord(t, "задать", "задай");
     static bool IsPrint(string t) => StartsWithWord(t, "вывести", "выведи", "напечатать", "напечатай", "печатать", "печатай", "показать", "покажи");
@@ -46,7 +74,7 @@ class Program
     static bool IsAdd(string t) => StartsWithWord(t, "добавить", "добавь");
     static bool IsAsk(string t) => StartsWithWord(t, "спросить", "спроси");
     static bool IsWait(string t) => StartsWithWord(t, "ждать", "жди");
-    static bool IsBlockStart(string t) => IsIf(t) || IsWhile(t) || IsRepeat(t) || IsFor(t) || IsForever(t) || IsWhen(t);
+    static bool IsBlockStart(string t) => IsIf(t) || IsWhile(t) || IsRepeat(t) || IsFor(t) || IsForever(t) || IsWhen(t) || IsOnStart(t) || IsTrigger(t);
 
     static string AfterFirstWord(string text)
     {
@@ -133,7 +161,7 @@ class Program
             }
             if (c == '(') { toks.Add(new Tok(TokKind.LPar, "(")); i++; continue; }
             if (c == ')') { toks.Add(new Tok(TokKind.RPar, ")")); i++; continue; }
-            if ("+-*/%".Contains(c)) { toks.Add(new Tok(TokKind.Op, c.ToString())); i++; continue; }
+            if ("+-*/%^".Contains(c)) { toks.Add(new Tok(TokKind.Op, c.ToString())); i++; continue; }
             if (char.IsLetter(c) || c == '_' || c >= 0x400 && c <= 0x4FF)
             {
                 int j = i;
@@ -196,12 +224,138 @@ class Program
         return NormNum(a + Rnd.NextDouble() * (b - a));
     }
 
+    static object EvalHas(string expr, int line)
+    {
+        string t = Regex.Replace(expr.Trim(), @"^есть\b", "", RegexOptions.IgnoreCase).Trim();
+        int split = -1;
+        bool inQ = false;
+        for (int i = 0; i < t.Length; i++)
+        {
+            if (t[i] == '"') { inQ = !inQ; continue; }
+            if (inQ) continue;
+            if ((t[i] == 'в' || t[i] == 'В') && (i == 0 || !IsWordChar(t[i - 1])) && (i + 1 >= t.Length || !IsWordChar(t[i + 1])))
+                split = i;
+        }
+        if (split < 0) throw new Exception($"строка {line}: надо так -> есть \"яблоко\" в фрукты");
+        string valExpr = t[..split].Trim();
+        string name = t[(split + 1)..].Trim();
+        if (valExpr == "" || !NameRegex.IsMatch(name))
+            throw new Exception($"строка {line}: надо так -> есть \"яблоко\" в фрукты");
+        if (!Vars.TryGetValue(name, out var v) || v is not List<object> l)
+            throw new Exception($"строка {line}: нет такого списка: {name}");
+        object want = EvalFull(valExpr, line);
+        foreach (var item in l)
+        {
+            if (want is int or double or bool && item is int or double or bool)
+            {
+                if (Math.Abs(ToNum(want, line) - ToNum(item, line)) < 1e-9) return true;
+            }
+            else if (Fmt(item) == Fmt(want)) return true;
+        }
+        return false;
+    }
+
+    static object EvalMathFn(string expr, int line)
+    {
+        string t = expr.Trim();
+        string fn = FirstWord(t).ToLowerInvariant();
+        string arg = AfterFirstWord(t);
+        if (arg == "") throw new Exception($"строка {line}: надо так -> {fn} 16");
+        double x = ToNum(EvalArith(arg, line), line);
+        return fn switch
+        {
+            "корень" => x < 0 ? throw new Exception($"строка {line}: корень из отрицательного") : NormNum(Math.Sqrt(x)),
+            "модуль" => NormNum(Math.Abs(x)),
+            "округлить" => (int)Math.Round(x, MidpointRounding.AwayFromZero),
+            _ => throw new Exception($"строка {line}: не знаю '{fn}'"),
+        };
+    }
+
+    static int SplitLastStandalone(string s, string word, int line)
+    {
+        int found = -1;
+        bool inQ = false;
+        string low = s.ToLowerInvariant();
+        string w = word.ToLowerInvariant();
+        for (int i = 0; i < s.Length; i++)
+        {
+            if (s[i] == '"') { inQ = !inQ; continue; }
+            if (inQ) continue;
+            if (i + w.Length <= low.Length && low.Substring(i, w.Length) == w)
+            {
+                bool lb = i == 0 || !IsWordChar(s[i - 1]);
+                int e = i + w.Length;
+                bool rb = e >= s.Length || !IsWordChar(s[e]);
+                if (lb && rb) found = i;
+            }
+        }
+        return found;
+    }
+
+    static object EvalFind(string expr, int line)
+    {
+        string t = Regex.Replace(expr.Trim(), @"^найти\b", "", RegexOptions.IgnoreCase).Trim();
+        if (SplitFileTarget(t, line, out string what, out string where) < 0 || what == "" || where == "")
+            throw new Exception($"строка {line}: надо так -> найти \"мир\" в \"привет мир\"");
+        string hs = Fmt(EvalFull(where, line));
+        string nd = Fmt(EvalFull(what, line));
+        return hs.IndexOf(nd, StringComparison.Ordinal) + 1;
+    }
+
+    static object EvalReplace(string expr, int line)
+    {
+        string t = Regex.Replace(expr.Trim(), @"^заменить\b", "", RegexOptions.IgnoreCase).Trim();
+        if (SplitFileTarget(t, line, out string left, out string where) < 0 || left == "" || where == "")
+            throw new Exception($"строка {line}: надо так -> заменить \"мир\" на \"друг\" в \"привет мир\"");
+        int ni = SplitLastStandalone(left, "на", line);
+        if (ni < 0) throw new Exception($"строка {line}: надо так -> заменить \"мир\" на \"друг\" в \"привет мир\"");
+        string what = left[..ni].Trim();
+        string by = left[(ni + 2)..].Trim();
+        if (what == "" || by == "")
+            throw new Exception($"строка {line}: надо так -> заменить \"мир\" на \"друг\" в \"привет мир\"");
+        return Fmt(EvalFull(where, line)).Replace(Fmt(EvalFull(what, line)), Fmt(EvalFull(by, line)));
+    }
+
+    static object EvalSlice(string expr, int line)
+    {
+        string t = Regex.Replace(expr.Trim(), @"^срез\b", "", RegexOptions.IgnoreCase).Trim();
+        int si = SplitLastStandalone(t, "с", line);
+        if (si < 0) throw new Exception($"строка {line}: надо так -> срез \"привет\" с 2 по 4");
+        string textExpr = t[..si].Trim();
+        string rest = t[(si + 1)..].Trim();
+        int pi = SplitLastStandalone(rest, "по", line);
+        if (pi < 0 || textExpr == "") throw new Exception($"строка {line}: надо так -> срез \"привет\" с 2 по 4");
+        string s = Fmt(EvalFull(textExpr, line));
+        int a = (int)Math.Round(ToNum(EvalArith(rest[..pi].Trim(), line), line));
+        int b = (int)Math.Round(ToNum(EvalArith(rest[(pi + 2)..].Trim(), line), line));
+        if (a < 1) a = 1;
+        if (b > s.Length) b = s.Length;
+        if (a > b) return "";
+        return s.Substring(a - 1, b - a + 1);
+    }
+
+    static object EvalCase(string expr, int line)
+    {
+        string t = expr.Trim();
+        bool up = StartsWithWord(t, "верхний");
+        string arg = AfterFirstWord(t);
+        if (arg == "") throw new Exception($"строка {line}: надо так -> верхний \"привет\"");
+        string s = Fmt(EvalArith(arg, line));
+        return up ? s.ToUpperInvariant() : s.ToLowerInvariant();
+    }
+
     static object EvalArith(string expr, int line)
     {
         expr = expr.Trim();
         if (expr == "") throw new Exception($"строка {line}: пустое выражение");
         if (StartsWithWord(expr, "взять")) return EvalTake(expr, line);
         if (StartsWithWord(expr, "длина")) return EvalLen(expr, line);
+        if (StartsWithWord(expr, "есть")) return EvalHas(expr, line);
+        if (StartsWithWord(expr, "корень", "модуль", "округлить")) return EvalMathFn(expr, line);
+        if (StartsWithWord(expr, "найти")) return EvalFind(expr, line);
+        if (StartsWithWord(expr, "заменить")) return EvalReplace(expr, line);
+        if (StartsWithWord(expr, "срез")) return EvalSlice(expr, line);
+        if (StartsWithWord(expr, "верхний", "нижний")) return EvalCase(expr, line);
         if (StartsWithWord(expr, "случайное")) return EvalRandom(expr, line);
         if (expr.Trim().Equals("время", StringComparison.OrdinalIgnoreCase)) return NormNum(Math.Round(ProgTime.Elapsed.TotalSeconds, 3));
         var q = QuotedFull.Match(expr);
@@ -258,7 +412,7 @@ class Program
         throw new Exception($"строка {line}: не понимаю '{t.Val}'");
     }
 
-    static int Prec(string op) => op == ".." ? 0 : op is "*" or "/" or "%" ? 2 : 1;
+    static int Prec(string op) => op == ".." ? 0 : op == "^" ? 3 : op is "*" or "/" or "%" ? 2 : 1;
 
     static List<Tok> ToRpn(List<Tok> toks, int line)
     {
@@ -288,7 +442,7 @@ class Program
                 {
                     out_.Add(new Tok(TokKind.Num, "0"));
                 }
-                while (st.Count > 0 && st.Peek().Kind == TokKind.Op && (Prec(st.Peek().Val) > Prec(op) || (Prec(st.Peek().Val) == Prec(op) && op != "..")))
+                while (st.Count > 0 && st.Peek().Kind == TokKind.Op && (Prec(st.Peek().Val) > Prec(op) || (Prec(st.Peek().Val) == Prec(op) && op != ".." && op != "^")))
                     out_.Add(st.Pop());
                 st.Push(t); prev = t;
             }
@@ -335,6 +489,7 @@ class Program
             "*" => NormNum(x * y),
             "/" => y == 0 ? throw new Exception($"строка {line}: деление на ноль") : NormNum(x / y),
             "%" => y == 0 ? throw new Exception($"строка {line}: деление на ноль") : NormNum(x % y),
+            "^" => NormNum(Math.Pow(x, y)),
             _ => throw new Exception($"строка {line}: не знаю действие '{op}'"),
         };
     }
@@ -543,13 +698,6 @@ class Program
         return EvalArith(expr, line);
     }
 
-    static string ExtractIfCond(string text, int line)
-    {
-        string t = Regex.Replace(text.Trim(), @"^(если|эсли)\b", "", RegexOptions.IgnoreCase).Trim();
-        t = StripTrailingWord(t, "то", "тогда");
-        if (t == "") throw new Exception($"строка {line}: после 'если' надо условие. Пример: если возраст > 10 то");
-        return t;
-    }
     static string ExtractWhileCond(string text, int line)
     {
         string t = Regex.Replace(text.Trim(), @"^пока\b", "", RegexOptions.IgnoreCase).Trim();
@@ -600,10 +748,8 @@ class Program
         object q = EvalFull(qExpr, line);
         Console.Write(Fmt(q));
         if (!Fmt(q).EndsWith(" ") && !Fmt(q).EndsWith("\n")) Console.Write(" ");
-        string ans = (Console.ReadLine() ?? "").Trim().Trim((char)0xFEFF, (char)0x200B).Trim();
-        if (int.TryParse(ans, out int ii)) Vars[name] = ii;
-        else if (double.TryParse(ans.Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double dd)) Vars[name] = NormNum(dd);
-        else Vars[name] = ans;
+        string ans = Console.ReadLine() ?? "";
+        Vars[name] = StoreValue(ans);
     }
     static readonly Dictionary<string, double> WaitUnits = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -629,6 +775,95 @@ class Program
         if (v < 0) throw new Exception($"строка {line}: ждать можно 0 и больше");
         Thread.Sleep((int)Math.Round(v * mult));
     }
+    static object StoreValue(string ans)
+    {
+        ans = ans.Trim().Trim((char)0xFEFF, (char)0x200B).Trim();
+        if (int.TryParse(ans, out int ii)) return ii;
+        if (double.TryParse(ans.Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double dd)) return NormNum(dd);
+        return ans;
+    }
+
+    static int SplitFileTarget(string rest, int line, out string first, out string second)
+    {
+        int split = -1;
+        bool inQ = false;
+        for (int i = 0; i < rest.Length; i++)
+        {
+            if (rest[i] == '"') { inQ = !inQ; continue; }
+            if (inQ) continue;
+            if ((rest[i] == 'в' || rest[i] == 'В') && (i == 0 || !IsWordChar(rest[i - 1])) && (i + 1 >= rest.Length || !IsWordChar(rest[i + 1])))
+                split = i;
+        }
+        first = ""; second = "";
+        if (split < 0) return -1;
+        first = rest[..split].Trim();
+        second = rest[(split + 1)..].Trim();
+        return split;
+    }
+
+    static void ExecWriteFile(string text, int line)
+    {
+        string rest = AfterFirstWord(text);
+        if (SplitFileTarget(rest, line, out string valExpr, out string after) < 0)
+            throw new Exception($"строка {line}: надо так -> записать \"привет\" в файл \"сейв.txt\"");
+        string afterLow = after.ToLowerInvariant();
+        if (!afterLow.StartsWith("файл") || (after.Length > 4 && IsWordChar(after[4])))
+            throw new Exception($"строка {line}: надо так -> записать \"привет\" в файл \"сейв.txt\"");
+        string pathExpr = after[4..].Trim();
+        if (valExpr == "" || pathExpr == "")
+            throw new Exception($"строка {line}: надо так -> записать \"привет\" в файл \"сейв.txt\"");
+        object v = EvalFull(valExpr, line);
+        string path = Fmt(EvalFull(pathExpr, line));
+        if (System.IO.Path.GetExtension(path) == "") path += ".txt";
+        try { File.WriteAllText(path, Fmt(v), new System.Text.UTF8Encoding(false)); }
+        catch (Exception ex) { throw new Exception($"строка {line}: не записать '{path}': {ex.Message}"); }
+    }
+
+    static void ExecReadFile(string text, int line)
+    {
+        string rest = AfterFirstWord(text);
+        string low = rest.ToLowerInvariant();
+        if (!low.StartsWith("файл") || (rest.Length > 4 && IsWordChar(rest[4])))
+            throw new Exception($"строка {line}: надо так -> прочитать файл \"сейв.txt\" в данные");
+        string after = rest[4..].Trim();
+        if (SplitFileTarget(after, line, out string pathExpr, out string name) < 0)
+            throw new Exception($"строка {line}: надо так -> прочитать файл \"сейв.txt\" в данные");
+        if (pathExpr == "" || !NameRegex.IsMatch(name))
+            throw new Exception($"строка {line}: надо так -> прочитать файл \"сейв.txt\" в данные");
+        string path = Fmt(EvalFull(pathExpr, line));
+        if (System.IO.Path.GetExtension(path) == "") path += ".txt";
+        string content;
+        try { content = File.ReadAllText(path, System.Text.Encoding.UTF8); }
+        catch (Exception ex) { throw new Exception($"строка {line}: не прочитать '{path}': {ex.Message}"); }
+        Vars[name] = StoreValue(content);
+    }
+
+    static void ExecDelete(string text, int line)
+    {
+        string rest = AfterFirstWord(text);
+        rest = Regex.Replace(rest, @"^из\s+", "", RegexOptions.IgnoreCase).Trim();
+        int sp = rest.IndexOfAny(new[] { ' ', '\t' });
+        if (sp < 0) throw new Exception($"строка {line}: надо так -> удалить из фрукты 1");
+        string name = rest[..sp].Trim();
+        string idxExpr = rest[(sp + 1)..].Trim();
+        if (!NameRegex.IsMatch(name) || idxExpr == "")
+            throw new Exception($"строка {line}: надо так -> удалить из {name} 1");
+        if (!Vars.TryGetValue(name, out var v) || v is not List<object> l)
+            throw new Exception($"строка {line}: нет такого списка: {name}");
+        int idx = (int)Math.Round(ToNum(EvalArith(idxExpr, line), line));
+        if (idx < 1 || idx > l.Count) throw new Exception($"строка {line}: в списке '{name}' всего {l.Count}, а просят {idx} (счет с 1)");
+        l.RemoveAt(idx - 1);
+    }
+
+    static void ExecClear(string text, int line)
+    {
+        string name = AfterFirstWord(text).Trim().Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+        if (!NameRegex.IsMatch(name))
+            throw new Exception($"строка {line}: надо так -> очистить фрукты");
+        if (!Vars.TryGetValue(name, out var v) || v is not List<object> l)
+            throw new Exception($"строка {line}: нет такого списка: {name}");
+        l.Clear();
+    }
     static string ExtractEventDef(string text)
     {
         string t = Regex.Replace(text.Trim(), @"^когда\b", "", RegexOptions.IgnoreCase).Trim();
@@ -646,10 +881,13 @@ class Program
         return ev.ToLowerInvariant();
     }
 
-    static (int end, int elseIdx) FindBlock(List<Line> code, int start)
+    static (int end, int elseIdx) FindBlock(List<Line> code, int start) => FindBlockBounded(code, start, code.Count);
+
+    static (int end, int elseIdx) FindBlockBounded(List<Line> code, int start, int bound)
     {
         int depth = 0, elseIdx = -1;
-        for (int j = start + 1; j < code.Count; j++)
+        bool elsePlain = false;
+        for (int j = start + 1; j < bound; j++)
         {
             string t = code[j].Text;
             if (IsBlockStart(t)) depth++;
@@ -658,15 +896,93 @@ class Program
                 if (depth == 0) return (j, elseIdx);
                 depth--;
             }
-            else if (IsElse(t) && depth == 0 && IsIf(code[start].Text))
+            else if (IsElse(t) && depth == 0 && (IsIf(code[start].Text) || IsElseIf(code[start].Text)))
             {
-                if (elseIdx >= 0) throw new Exception($"строка {code[j].No}: два 'иначе' в одном 'если'");
-                elseIdx = j;
+                if (elseIdx < 0) { elseIdx = j; elsePlain = !IsElseIf(t); }
+                else if (!IsElseIf(t) && elsePlain) throw new Exception($"строка {code[j].No}: два 'иначе' в одном 'если'");
             }
         }
         throw new Exception($"строка {code[start].No}: нет 'конец' для '{code[start].Text}'");
     }
 
+    static string CondFromIfLine(string text, int line)
+    {
+        string t = Regex.Replace(text.Trim(), @"^иначе\b", "", RegexOptions.IgnoreCase).Trim();
+        t = Regex.Replace(t, @"^(если|эсли)\b", "", RegexOptions.IgnoreCase).Trim();
+        t = StripTrailingWord(t, "то", "тогда");
+        if (t == "") throw new Exception($"строка {line}: после 'если' надо условие. Пример: если возраст > 10 то");
+        return t;
+    }
+
+    static int ExecIfAt(List<Line> code, int idx, int bound)
+    {
+        var (end, el) = FindBlockBounded(code, idx, bound);
+        int no = code[idx].No;
+        if (EvalCondition(CondFromIfLine(code[idx].Text, no), no)) ExecRange(code, idx + 1, el >= 0 ? el : end);
+        else if (el >= 0)
+        {
+            if (IsElseIf(code[el].Text)) ExecIfAt(code, el, end + 1);
+            else ExecRange(code, el + 1, end);
+        }
+        return end + 1;
+    }
+
+    static string CondFromTriggerLine(string text, int line)
+    {
+        string t = Regex.Replace(text.Trim(), @"^как\s+только\b", "", RegexOptions.IgnoreCase).Trim();
+        t = StripTrailingWord(t, "то", "тогда");
+        if (t == "") throw new Exception($"строка {line}: надо так -> как только очки равно 10 то");
+        return t;
+    }
+
+    static void CollectStarts(List<Line> code)
+    {
+        for (int i = 0; i < code.Count; i++)
+        {
+            if (IsOnStart(code[i].Text))
+            {
+                var (end, _) = FindBlock(code, i);
+                OnStarts.Add(code.GetRange(i + 1, end - i - 1));
+                i = end;
+            }
+        }
+    }
+
+    static void CollectTriggers(List<Line> code)
+    {
+        for (int i = 0; i < code.Count; i++)
+        {
+            if (IsTrigger(code[i].Text))
+            {
+                string c = CondFromTriggerLine(code[i].Text, code[i].No);
+                var (end, _) = FindBlock(code, i);
+                Triggers.Add(new Trigger { Cond = c, Body = code.GetRange(i + 1, end - i - 1), No = code[i].No });
+                i = end;
+            }
+        }
+    }
+
+    static void CheckTriggers(int line)
+    {
+        if (Triggers.Count == 0) return;
+        if (++TriggerDepth > 20) { TriggerDepth--; throw new Exception($"строка {line}: триггеры зациклились"); }
+        try
+        {
+            foreach (var tr in Triggers)
+            {
+                bool now;
+                try { now = EvalCondition(tr.Cond, line); }
+                catch { continue; }
+                if (!tr.Last && now)
+                {
+                    tr.Last = true;
+                    ExecRange(tr.Body, 0, tr.Body.Count);
+                }
+                else tr.Last = now;
+            }
+        }
+        finally { TriggerDepth--; }
+    }
     static void CollectHandlers(List<Line> code)
     {
         for (int i = 0; i < code.Count; i++)
@@ -698,17 +1014,11 @@ class Program
         int i = from;
         while (i < to)
         {
+            CheckTriggers(code[i].No);
             string text = code[i].Text;
             int no = code[i].No;
-            if (IsWhen(text)) { var (e, _) = FindBlock(code, i); i = e + 1; continue; }
-            else if (IsIf(text))
-            {
-                var (e, el) = FindBlock(code, i);
-                bool c = EvalCondition(ExtractIfCond(text, no), no);
-                if (c) ExecRange(code, i + 1, el >= 0 ? el : e);
-                else if (el >= 0) ExecRange(code, el + 1, e);
-                i = e + 1; continue;
-            }
+            if (IsWhen(text) || IsOnStart(text) || IsTrigger(text)) { var (e, _) = FindBlock(code, i); i = e + 1; continue; }
+            else if (IsIf(text)) { i = ExecIfAt(code, i, to); continue; }
             else if (IsWhile(text))
             {
                 var (e, _) = FindBlock(code, i);
@@ -716,7 +1026,7 @@ class Program
                 int guard = 0;
                 while (EvalCondition(c, no))
                 {
-                    try { ExecRange(code, i + 1, e); } catch (BreakException) { break; }
+                    try { ExecRange(code, i + 1, e); } catch (BreakException) { break; } catch (ContinueException) { }
                     if (++guard > 1_000_000) throw new Exception($"строка {no}: 'пока' крутится слишком долго. Добавь 'остановить'");
                 }
                 i = e + 1; continue;
@@ -727,7 +1037,7 @@ class Program
                 int guard = 0;
                 while (true)
                 {
-                    try { ExecRange(code, i + 1, e); } catch (BreakException) { break; }
+                    try { ExecRange(code, i + 1, e); } catch (BreakException) { break; } catch (ContinueException) { }
                     if (++guard > 10_000_000) throw new Exception($"строка {no}: 'вечно повторять' без 'остановить'");
                 }
                 i = e + 1; continue;
@@ -737,15 +1047,15 @@ class Program
                 var (e, _) = FindBlock(code, i);
                 int n = EvalRepeatCount(text, no);
                 for (int k = 0; k < n; k++)
-                { try { ExecRange(code, i + 1, e); } catch (BreakException) { break; } }
+                { try { ExecRange(code, i + 1, e); } catch (BreakException) { break; } catch (ContinueException) { } }
                 i = e + 1; continue;
             }
             else if (IsFor(text))
             {
                 var (e, _) = FindBlock(code, i);
                 var (name, a, b, s) = ParseFor(text, no);
-                if (s > 0) { for (double v = a; v <= b + 1e-9; v += s) { Vars[name] = NormNum(v); try { ExecRange(code, i + 1, e); } catch (BreakException) { break; } } }
-                else { for (double v = a; v >= b - 1e-9; v += s) { Vars[name] = NormNum(v); try { ExecRange(code, i + 1, e); } catch (BreakException) { break; } } }
+                if (s > 0) { for (double v = a; v <= b + 1e-9; v += s) { Vars[name] = NormNum(v); try { ExecRange(code, i + 1, e); } catch (BreakException) { break; } catch (ContinueException) { } } }
+                else { for (double v = a; v >= b - 1e-9; v += s) { Vars[name] = NormNum(v); try { ExecRange(code, i + 1, e); } catch (BreakException) { break; } catch (ContinueException) { } } }
                 i = e + 1; continue;
             }
             else if (IsElse(text)) throw new Exception($"строка {no}: 'иначе' без 'если'");
@@ -799,23 +1109,55 @@ class Program
             }
             else if (IsAsk(text)) { ExecAsk(text, no); i++; continue; }
             else if (IsWait(text)) { ExecWait(text, no); i++; continue; }
-            else throw new Exception($"строка {no}: не знаю команду '{text}'. Знаю: задать, вывести, спросить, ждать, если, пока, повтори, для, вечно повторять, когда, вещать, создать список, добавить");
+            else if (IsDelete(text)) { ExecDelete(text, no); i++; continue; }
+            else if (IsClear(text)) { ExecClear(text, no); i++; continue; }
+            else if (IsWriteFile(text)) { ExecWriteFile(text, no); i++; continue; }
+            else if (IsReadFile(text)) { ExecReadFile(text, no); i++; continue; }
+            else if (IsContinue(text)) throw new ContinueException();
+            else if (IsExit(text)) throw new ExitException();
+            else throw new Exception($"строка {no}: не знаю команду '{text}'. Знаю: задать, вывести, спросить, ждать, если, иначе если, пока, повтори, для, продолжить, остановить, выход, когда, вещать, создать список, добавить, удалить, очистить, записать, прочитать, подключить, при запуске, как только");
         }
     }
 
-    static void RunFile(string path)
+    static List<Line> LoadWithIncludes(string path, HashSet<string> visited)
     {
-        Vars.Clear(); Handlers.Clear(); BroadcastDepth = 0;
-        var raw = File.ReadAllLines(path, Encoding.UTF8);
+        string full;
+        try { full = System.IO.Path.GetFullPath(path); }
+        catch { throw new Exception($"плохое имя файла: '{path}'"); }
+        if (!visited.Add(full)) throw new Exception($"круг: файл '{path}' уже подключен");
+        string[] raw;
+        try { raw = File.ReadAllLines(full, System.Text.Encoding.UTF8); }
+        catch (Exception ex) { throw new Exception($"не открыть '{path}': {ex.Message}"); }
+        string dir = System.IO.Path.GetDirectoryName(full) ?? "";
         var code = new List<Line>();
         for (int i = 0; i < raw.Length; i++)
         {
             string t = raw[i].Trim();
             if (t == "" || t.StartsWith("#") || t.StartsWith("//")) continue;
+            if (IsInclude(t))
+            {
+                string arg = AfterFirstWord(t).Trim();
+                if (arg.StartsWith("\"") && arg.EndsWith("\"") && arg.Length >= 2) arg = arg[1..^1];
+                if (arg == "") throw new Exception($"строка {i + 1}: надо так -> подключить \"библио.ncode\"");
+                code.AddRange(LoadWithIncludes(System.IO.Path.Combine(dir, arg), visited));
+                continue;
+            }
             code.Add(new Line(t, i + 1));
         }
+        return code;
+    }
+
+    static void RunFile(string path)
+    {
+        Vars.Clear(); Handlers.Clear(); OnStarts.Clear(); Triggers.Clear(); BroadcastDepth = 0; TriggerDepth = 0;
+        var code = LoadWithIncludes(path, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
         CollectHandlers(code);
+        CollectStarts(code);
+        CollectTriggers(code);
+        foreach (var body in OnStarts)
+            ExecRange(body, 0, body.Count);
         ExecRange(code, 0, code.Count);
+        if (code.Count > 0) CheckTriggers(code[^1].No);
     }
 
     static int Main(string[] args)
@@ -829,6 +1171,8 @@ class Program
         else path = "test.ncode";
         try { RunFile(path); return 0; }
         catch (BreakException) { Console.WriteLine("Ошибка: 'остановить' без цикла"); return 1; }
+        catch (ContinueException) { Console.WriteLine("Ошибка: 'продолжить' без цикла"); return 1; }
+        catch (ExitException) { return 0; }
         catch (Exception ex) { Console.WriteLine("Ошибка: " + ex.Message); return 1; }
     }
 }
