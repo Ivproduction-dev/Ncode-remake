@@ -7,3 +7,4 @@ TestResults/
 __pycache__/
 *.pyc
 .venv/
+test*.ncode
