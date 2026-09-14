@@ -209,7 +209,7 @@ if %ANDROID_SDK_FOUND% equ 1 (
 
 rem Try Android runtime if workload exists - optional
 echo [5/6] Trying Android runtime ^(optional^)...
-dotnet build Ncode.Android -c Release -f net8.0-android --nologo >nul 2>&1
+dotnet build Ncode.Android -c Release -f net11.0-android --nologo >nul 2>&1
 if %errorlevel% equ 0 (
   echo [OK] Android runtime built
 ) else (
@@ -237,7 +237,7 @@ if not exist "%KEYSTORE%" (
 rem Try building Android APK in Release with signing if possible
 if exist "%KEYSTORE%" (
   echo Building Android release APK ^(signed^) for verification...
-  dotnet publish Ncode.Android\Ncode.Android.csproj -c Release -f net8.0-android -p:AndroidKeyStore=true -p:AndroidSigningKeyStore="%KEYSTORE%" -p:AndroidSigningKeyAlias=ncode -p:AndroidSigningKeyPass=ncode123 -p:AndroidSigningStorePass=ncode123 -o "%TEMP%\NcodeApkTest" --nologo >nul 2>&1
+  dotnet publish Ncode.Android\Ncode.Android.csproj -c Release -f net11.0-android -p:AndroidKeyStore=true -p:AndroidSigningKeyStore="%KEYSTORE%" -p:AndroidSigningKeyAlias=ncode -p:AndroidSigningKeyPass=ncode123 -p:AndroidSigningStorePass=ncode123 -o "%TEMP%\NcodeApkTest" --nologo >nul 2>&1
   if %errorlevel% equ 0 (
     echo [OK] Android release APK can be built - export via editor ^(Project - Export .apk^) will be signed
     rmdir /s /q "%TEMP%\NcodeApkTest" >nul 2>&1

@@ -4,10 +4,12 @@
 // Licensed under the GNU Affero General Public License v3.0 or later.
 // See LICENSE in the repository root.
 
-using Android.Content;
-using Android.Graphics;
-using Android.Views;
+using global::Android.Content;
+using global::Android.Graphics;
+using global::Android.Views;
 using Ncode.Core.Abstractions;
+using Ncode.Rendering;
+using System.IO;
 
 namespace Ncode.Android;
 
@@ -69,9 +71,9 @@ public sealed class AndroidGameView : View
                     {
                         try
                         {
-                            string path = Path.Combine(Context.FilesDir?.AbsolutePath ?? "", obj.SpritePath);
+                            string path = System.IO.Path.Combine(Context.FilesDir?.AbsolutePath ?? "", obj.SpritePath);
                             if (!File.Exists(path))
-                                path = Path.Combine(Android.App.Application.Context.FilesDir?.AbsolutePath ?? "", obj.SpritePath);
+                                path = System.IO.Path.Combine(global::Android.App.Application.Context.FilesDir?.AbsolutePath ?? "", obj.SpritePath);
                             if (File.Exists(path))
                             {
                                 var loaded = BitmapFactory.DecodeFile(path);
@@ -145,7 +147,7 @@ public sealed class AndroidGameView : View
     {
         if (e?.Action == MotionEventActions.Down)
         {
-            var host = GameHostService.Current as AndroidGameHost;
+            var host = global::Ncode.Core.Abstractions.GameHostService.Current as global::Ncode.Rendering.AndroidGameHost;
             host?.RaisePointerDown(e.GetX(), e.GetY());
             return true;
         }

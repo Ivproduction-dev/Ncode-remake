@@ -14,13 +14,13 @@ namespace Ncode.Rendering;
 public sealed class AndroidGameHost : IGameHost
 {
 #if ANDROID
-    private readonly Android.Views.View? _view;
+    private readonly global::Android.Views.View? _view;
     private int _clientWidth;
     private int _clientHeight;
     private bool _active;
 
     public AndroidGameHost() { }
-    public AndroidGameHost(Android.Views.View view) { _view = view; }
+    public AndroidGameHost(global::Android.Views.View view) { _view = view; }
 
     public int ClientWidth => _view is Ncode.Android.AndroidGameView gv ? gv.ViewWidth : (_clientWidth > 0 ? _clientWidth : 800);
     public int ClientHeight => _view is Ncode.Android.AndroidGameView gv2 ? gv2.ViewHeight : (_clientHeight > 0 ? _clientHeight : 600);

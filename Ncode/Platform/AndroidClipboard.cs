@@ -16,10 +16,10 @@ public sealed class AndroidClipboard : IClipboardService
     {
         try
         {
-            var cm = (Android.Content.ClipboardManager?)Android.App.Application.Context.GetSystemService(Android.Content.Context.ClipboardService);
+            var cm = (global::Android.Content.ClipboardManager?)global::Android.App.Application.Context.GetSystemService(global::Android.Content.Context.ClipboardService);
             if (cm != null)
             {
-                var clip = Android.Content.ClipData.NewPlainText("ncode", text);
+                var clip = global::Android.Content.ClipData.NewPlainText("ncode", text);
                 cm.PrimaryClip = clip;
             }
         }
@@ -30,7 +30,7 @@ public sealed class AndroidClipboard : IClipboardService
     {
         try
         {
-            var cm = (Android.Content.ClipboardManager?)Android.App.Application.Context.GetSystemService(Android.Content.Context.ClipboardService);
+            var cm = (global::Android.Content.ClipboardManager?)global::Android.App.Application.Context.GetSystemService(global::Android.Content.Context.ClipboardService);
             if (cm != null && cm.HasPrimaryClip && cm.PrimaryClip != null && cm.PrimaryClip.ItemCount > 0)
             {
                 var item = cm.PrimaryClip.GetItemAt(0);

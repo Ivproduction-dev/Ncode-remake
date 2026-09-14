@@ -16,7 +16,7 @@ public sealed class AndroidAudioPlayer : IAudioPlayer
 {
 #if ANDROID
     private readonly object _lock = new();
-    private readonly List<(string Key, Android.Media.MediaPlayer Player)> _activePlayers = new();
+    private readonly List<(string Key, global::Android.Media.MediaPlayer Player)> _activePlayers = new();
 
     private static string NormalizeKey(string path)
     {
@@ -27,7 +27,7 @@ public sealed class AndroidAudioPlayer : IAudioPlayer
     {
         try
         {
-            var player = new Android.Media.MediaPlayer();
+            var player = new global::Android.Media.MediaPlayer();
 
             if (File.Exists(filePath))
             {
@@ -35,7 +35,7 @@ public sealed class AndroidAudioPlayer : IAudioPlayer
             }
             else
             {
-                var context = Android.App.Application.Context;
+                var context = global::Android.App.Application.Context;
                 string assetName = filePath.TrimStart('/', '\\');
                 using var afd = context.Assets?.OpenFd(assetName);
                 if (afd != null)

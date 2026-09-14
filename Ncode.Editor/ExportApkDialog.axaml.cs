@@ -288,7 +288,7 @@ public partial class ExportApkDialog : Window
                 }
                 catch { }
                 var args = new StringBuilder();
-                args.Append($"publish \"{androidCsproj}\" -c Release -f net8.0-android -p:GameBundleZip=\"{tempZip}\" -p:ApplicationId={package} -p:ApplicationVersion={versionCode} -p:ApplicationDisplayVersion={version} -p:ApplicationTitle=\"{title}\" -o \"{tempPublish}\" --nologo");
+                args.Append($"publish \"{androidCsproj}\" -c Release -f net11.0-android -p:GameBundleZip=\"{tempZip}\" -p:ApplicationId={package} -p:ApplicationVersion={versionCode} -p:ApplicationDisplayVersion={version} -p:ApplicationTitle=\"{title}\" -o \"{tempPublish}\" --nologo");
                 if (useSigning) args.Append(signingArgs);
                 var psi = new ProcessStartInfo("dotnet", args.ToString())
                 {
