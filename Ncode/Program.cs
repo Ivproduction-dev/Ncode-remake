@@ -18,7 +18,7 @@ using Ncode.Core.Lexer;
 using Ncode.Platform;
 using Ncode.Rendering;
 
-class Program
+public class Program
 {
     static Program()
     {
@@ -4862,4 +4862,92 @@ class GameObject
             StopAllAudio();
         }
     }
+
+#if ANDROID
+    public static void RunAndroid(Android.Content.Context context, IGameHost host)
+    {
+        GameHostService.Current = host;
+        try { Console.InputEncoding = Encoding.UTF8; Console.OutputEncoding = Encoding.UTF8; } catch { }
+        string baseDir = context.FilesDir?.AbsolutePath ?? AppContext.BaseDirectory;
+        Stream? bundleStream = null;
+        try
+        {
+            bundleStream = context.Assets?.Open("GameBundle.zip");
+            if (bundleStream == null)
+            {
+                var asm = typeof(Program).Assembly;
+                bundleStream = asm.GetManifestResourceStream("GameBundle.zip");
+                if (bundleStream == null)
+                {
+                    var names = asm.GetManifestResourceNames();
+                    var match = Array.Find(names, n => n.EndsWith("GameBundle.zip", StringComparison.OrdinalIgnoreCase));
+                    if (match != null) bundleStream = asm.GetManifestResourceStream(match);
+                }
+            }
+        }
+        catch { }
+        if (bundleStream != null)
+        {
+            try
+            {
+                string tempGameDir = Path.Combine(context.FilesDir?.AbsolutePath ?? Path.GetTempPath(), "NcodeGame");
+                Directory.CreateDirectory(tempGameDir);
+                string tempDirFullPath = Path.GetFullPath(tempGameDir);
+                if (!tempDirFullPath.EndsWith(Path.DirectorySeparatorChar)) tempDirFullPath += Path.DirectorySeparatorChar;
+                using (var archive = new ZipArchive(bundleStream, ZipArchiveMode.Read))
+                {
+                    foreach (var entry in archive.Entries)
+                    {
+                        if (string.IsNullOrEmpty(entry.Name)) continue;
+                        string destPath = Path.GetFullPath(Path.Combine(tempGameDir, entry.FullName));
+                        if (!destPath.StartsWith(tempDirFullPath, StringComparison.OrdinalIgnoreCase)) continue;
+                        string? d = Path.GetDirectoryName(destPath);
+                        if (!string.IsNullOrEmpty(d)) Directory.CreateDirectory(d);
+                        entry.ExtractToFile(destPath, true);
+                    }
+                }
+                baseDir = tempGameDir;
+                curDir = tempGameDir;
+                Environment.CurrentDirectory = tempGameDir;
+            }
+            catch (Exception ex) { Console.Error.WriteLine("[бандл] " + ex.Message); }
+        }
+        else
+        {
+            curDir = baseDir;
+        }
+
+        string configPath = Path.Combine(baseDir, "game.json");
+        if (File.Exists(configPath))
+        {
+            try
+            {
+                var json = File.ReadAllText(configPath, Encoding.UTF8);
+                ActiveConfig = System.Text.Json.JsonSerializer.Deserialize<GameConfig>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+            catch (Exception ex) { Console.Error.WriteLine("[конфиг] " + ex.Message); }
+        }
+
+        string path;
+        if (ActiveConfig?.Main != null && File.Exists(Path.Combine(baseDir, ActiveConfig.Main))) path = Path.Combine(baseDir, ActiveConfig.Main);
+        else if (File.Exists(Path.Combine(baseDir, "main.ncode"))) path = Path.Combine(baseDir, "main.ncode");
+        else if (File.Exists(Path.Combine(baseDir, "game.ncode"))) path = Path.Combine(baseDir, "game.ncode");
+        else path = Path.Combine(baseDir, "main.ncode");
+
+        try
+        {
+            RunFile(path);
+            if (GameHostService.Current.IsActive) GameHostService.Current.WaitUntilClosed();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Ошибка: " + ex.Message);
+        }
+        finally
+        {
+            StopPhysics();
+            StopAllAudio();
+        }
+    }
+#endif
 }

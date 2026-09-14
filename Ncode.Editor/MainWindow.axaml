@@ -112,6 +112,9 @@
                     <MenuItem Name="MenuProjectOptions" Header="Опции проекта..."/>
                     <Separator/>
                     <MenuItem Name="MenuImportProject" Header="Импортировать проект (.nproject)..."/>
+                    <Separator/>
+                    <MenuItem Name="MenuExportExe" Header="Экспорт в .exe (Windows)..."/>
+                    <MenuItem Name="MenuExportApk" Header="Экспорт в .apk (Android)..."/>
                 </MenuItem>
                 <MenuItem Header="Правка">
                     <MenuItem Name="MenuClearOutput" Header="Очистить консоль"/>

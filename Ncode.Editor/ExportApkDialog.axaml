@@ -1,0 +1,104 @@
+<!-- Ncode — Russian programming language for games.
+     Copyright (C) 2026 Ivproduction
+     SPDX-License-Identifier: AGPL-3.0-or-later
+     Licensed under the GNU Affero General Public License v3.0 or later.
+     See LICENSE in the repository root. -->
+
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Ncode.Editor.ExportApkDialog"
+        Title="Экспорт игры в .apk" Width="600" Height="620"
+        WindowStartupLocation="CenterOwner" CanResize="False"
+        Background="#141413" Foreground="#FAF9F5">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,0,0,1" Padding="20,16">
+            <DockPanel>
+                <Border Width="40" Height="40" CornerRadius="4" Background="#788F69" Margin="0,0,14,0" DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <TextBlock Text="APK" FontFamily="Georgia, serif" FontSize="14" FontWeight="Bold" Foreground="#FAF9F5"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Экспорт игры в .apk (Android)" FontFamily="Georgia, serif" FontSize="17" FontWeight="SemiBold" Foreground="#FAF9F5"/>
+                    <TextBlock Text="Сборка Android-приложения с рантаймом Ncode" FontSize="12" Foreground="#87867F" Margin="0,2,0,0"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" Padding="24,18">
+            <StackPanel Spacing="14">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Название игры" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                    <TextBox Name="TitleBox" PlaceholderText="Моя Игра" Padding="10,6" FontSize="13"
+                             Background="#1E1E1C" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"/>
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Package ID (Android)" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                    <TextBox Name="PackageBox" PlaceholderText="com.ivproduction.mygame" Padding="10,6" FontSize="13"
+                             Background="#1E1E1C" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"/>
+                    <TextBlock Text="Формат: com.ваша_компания.имя_игры, только латиница и точки" FontSize="11" Foreground="#6E6D68"/>
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Главный скрипт (точка входа)" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                    <ComboBox Name="MainFileCombo" HorizontalAlignment="Stretch" Padding="10,6"
+                              Background="#1E1E1C" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"/>
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <DockPanel>
+                        <TextBlock Text="Иконка (.png)" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                        <TextBlock Text="необязательно" FontSize="11" Foreground="#87867F" HorizontalAlignment="Right"/>
+                    </DockPanel>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Name="IconBox" PlaceholderText="Выберите иконку 512x512..." Padding="10,6" FontSize="13"
+                                 Background="#1E1E1C" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"
+                                 VerticalAlignment="Center"/>
+                        <Button Name="BrowseIconBtn" Grid.Column="1" Classes="secondary" Content="Обзор..." Margin="8,0,0,0" VerticalAlignment="Center" Padding="10,5" CornerRadius="4" FontSize="12"/>
+                    </Grid>
+                </StackPanel>
+
+                <Border Background="#1E1E1C" BorderBrush="#30302E" BorderThickness="1" CornerRadius="4" Padding="16,14">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Параметры сборки" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                        <Border Height="1" Background="#2A2A27"/>
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Версия" FontSize="12" Foreground="#B0AEA5"/>
+                            <TextBox Name="VersionBox" Text="1.0" Padding="10,6" FontSize="13"
+                                     Background="#262624" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Папка для сохранения .apk" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Name="OutputDirBox" Padding="10,6" FontSize="13"
+                                 Background="#1E1E1C" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"
+                                 VerticalAlignment="Center"/>
+                        <Button Name="BrowseOutputBtn" Grid.Column="1" Classes="secondary" Content="Выбрать..." Margin="8,0,0,0" VerticalAlignment="Center" Padding="10,5" CornerRadius="4" FontSize="12"/>
+                    </Grid>
+                </StackPanel>
+
+                <Border Name="StatusCard" Background="#192819" BorderBrush="#788F69" BorderThickness="1" CornerRadius="4" Padding="12,10" IsVisible="False">
+                    <StackPanel Spacing="6">
+                        <ProgressBar Name="BuildProgress" IsIndeterminate="True" Height="4" CornerRadius="2"
+                                     Foreground="#788F69" Background="#262624"/>
+                        <TextBlock Name="StatusText" Foreground="#8FA87B" FontSize="12" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,1,0,0" Padding="20,12">
+            <DockPanel>
+                <Button Name="CancelBtn" Classes="secondary" Content="Отмена" DockPanel.Dock="Left" Padding="12,5" CornerRadius="4" FontSize="12"/>
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button Name="OpenFolderBtn" Classes="secondary" Content="Показать в Проводнике" IsVisible="False" Padding="12,5" CornerRadius="4" FontSize="12"/>
+                    <Button Name="BuildBtn" Classes="accent" Content="Собрать .apk" Padding="14,5" CornerRadius="4" FontSize="12"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -60,6 +60,8 @@ public partial class MainWindow : Window
         MenuImportProject.Click += ImportProjectClick;
         FlyoutImport.Click += ImportProjectClick;
         FlyoutProjectOptions.Click += ProjectOptionsClick;
+        MenuExportExe.Click += ExportExeClick;
+        MenuExportApk.Click += ExportApkClick;
         MenuSave.Click += SaveClick;
         MenuSaveAll.Click += (_, _) => SaveAllOpenTabs();
         MenuCloseTab.Click += (_, _) => CloseCurrentTab();
@@ -256,8 +258,7 @@ public partial class MainWindow : Window
         SetProjectDir(dir);
     }
 
-    private async void ImportProjectClick(object? sender, RoutedEventArgs e)
-    {
+    private async void ImportProjectClick(object? sender, RoutedEventArgs e)    {
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Импортировать пакет проекта Ncode",
@@ -297,6 +298,28 @@ public partial class MainWindow : Window
         }
 
         var dlg = new ProjectOptionsDialog(projectDir);
+        await dlg.ShowDialog(this);
+    }
+
+    private async void ExportExeClick(object? sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(projectDir) || !Directory.Exists(projectDir))
+        {
+            AppendOutput("Откройте проект для экспорта в .exe");
+            return;
+        }
+        var dlg = new ExportExeDialog(projectDir);
+        await dlg.ShowDialog(this);
+    }
+
+    private async void ExportApkClick(object? sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(projectDir) || !Directory.Exists(projectDir))
+        {
+            AppendOutput("Откройте проект для экспорта в .apk");
+            return;
+        }
+        var dlg = new ExportApkDialog(projectDir);
         await dlg.ShowDialog(this);
     }
 
