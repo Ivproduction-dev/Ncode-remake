@@ -187,10 +187,34 @@ public partial class ExportApkDialog : Window
 
             SetStatus("Сборка .apk (требует Android SDK, может занять минуты)...", false);
 
+            string keystorePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Ncode", "ncode.keystore");
+            const string keystorePass = "ncode123";
+            const string keyAlias = "ncode";
+            bool useSigning = false;
+            string signingArgs = "";
+            try
+            {
+                if (!File.Exists(keystorePath))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(keystorePath)!);
+                    var ktPsi = new ProcessStartInfo("keytool", $"-genkeypair -keystore \"{keystorePath}\" -alias {keyAlias} -keyalg RSA -keysize 2048 -validity 10000 -storepass {keystorePass} -keypass {keystorePass} -dname \"CN=Ncode,O=Ivproduction,C=RU\"")
+                    { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+                    using var kt = Process.Start(ktPsi);
+                    if (kt != null) { kt.WaitForExit(15000); try { kt.Kill(true); } catch { } }
+                }
+                if (File.Exists(keystorePath))
+                {
+                    useSigning = true;
+                    signingArgs = $" -p:AndroidKeyStore=true -p:AndroidSigningKeyStore=\"{keystorePath}\" -p:AndroidSigningKeyAlias={keyAlias} -p:AndroidSigningKeyPass={keystorePass} -p:AndroidSigningStorePass={keystorePass}";
+                }
+            }
+            catch { }
+
             bool success = await Task.Run(() =>
             {
                 var args = new StringBuilder();
                 args.Append($"publish \"{androidCsproj}\" -c Release -f net8.0-android -p:GameBundleZip=\"{tempZip}\" -p:ApplicationId={package} -p:ApplicationVersion=1 -p:ApplicationDisplayVersion={version} -p:ApplicationTitle=\"{title}\" -o \"{tempPublish}\" --nologo");
+                if (useSigning) args.Append(signingArgs);
                 var psi = new ProcessStartInfo("dotnet", args.ToString())
                 {
                     CreateNoWindow = true, UseShellExecute = false,

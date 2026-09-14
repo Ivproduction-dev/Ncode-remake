@@ -161,6 +161,36 @@ if %errorlevel% equ 0 (
   echo [..] Android runtime not built ^(no TFM or workload^) - ok, Windows runtime ready
 )
 
+rem Release APK signing - generate keystore if missing
+echo.
+echo [4/4] Release APK keystore ^(for signed .apk^)...
+set KEYSTORE=%AppData%\Ncode\ncode.keystore
+if not exist "%KEYSTORE%" (
+  mkdir "%AppData%\Ncode" >nul 2>&1
+  where keytool >nul 2>&1
+  if %errorlevel% equ 0 (
+    echo Generating keystore at %KEYSTORE% ...
+    keytool -genkeypair -keystore "%KEYSTORE%" -alias ncode -keyalg RSA -keysize 2048 -validity 10000 -storepass ncode123 -keypass ncode123 -dname "CN=Ncode,O=Ivproduction,C=RU" >nul 2>&1
+    if exist "%KEYSTORE%" echo [OK] Keystore created
+  ) else (
+    echo [!!] keytool not found ^(install JDK 17+^) - APK will be debug-signed
+  )
+) else (
+  echo [OK] Keystore exists at %KEYSTORE%
+)
+
+rem Try building Android APK in Release with signing if possible
+if exist "%KEYSTORE%" (
+  echo Building Android release APK ^(signed^) for verification...
+  dotnet publish Ncode.Android\Ncode.Android.csproj -c Release -f net8.0-android -p:AndroidKeyStore=true -p:AndroidSigningKeyStore="%KEYSTORE%" -p:AndroidSigningKeyAlias=ncode -p:AndroidSigningKeyPass=ncode123 -p:AndroidSigningStorePass=ncode123 -o "%TEMP%\NcodeApkTest" --nologo >nul 2>&1
+  if %errorlevel% equ 0 (
+    echo [OK] Android release APK can be built - export via editor ^(Project - Export .apk^) will be signed
+    rmdir /s /q "%TEMP%\NcodeApkTest" >nul 2>&1
+  ) else (
+    echo [..] Android APK build skipped ^(no workload/SDK^) - will be built on export
+  )
+)
+
 echo.
 echo ========================================
 echo  Done!
