@@ -8,14 +8,12 @@ on:
 
 jobs:
   build-and-test:
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - run: dotnet build Ncode.sln --nologo
+      - run: dotnet build Ncode.sln --nologo -p:TargetFramework=net8.0-windows
+      - run: dotnet build Ncode.sln --nologo -p:TargetFramework=net8.0
       - run: dotnet test Ncode.Tests --nologo

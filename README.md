@@ -1,6 +1,6 @@
 # Ncode
 
-Русскоязычный язык для игр и программ. Пиши по-русски — запускай на Windows, Linux, macOS (редактор Avalonia + рантайм headless/WinForms).
+Русскоязычный язык для игр и программ. Пиши по-русски — Windows (WinForms окно + звук) и Android (MediaPlayer + Toast).
 
 ```ncode
 задать имя "мир"
@@ -15,10 +15,10 @@
 
 ## Быстрый старт
 
-1. Установи [.NET 8 SDK](https://dotnet.microsoft.com/download).
-2. Собери: `dotnet build Ncode.sln`
-3. Запусти редактор: `editor.bat` на Windows / `sh editor.sh` на Linux/macOS (или `dotnet Ncode.Editor/bin/Debug/net8.0/Ncode.Editor.dll`)
-4. Или запусти файл напрямую: `ncode.bat игра.ncode` на Windows / `sh ncode.sh игра.ncode` на Linux/macOS / `dotnet Ncode/bin/Debug/net8.0/Ncode.dll игра.ncode` (кроссплатформенно) или `dotnet Ncode/bin/Debug/net8.0-windows/Ncode.dll игра.ncode` (Windows с окном)
+1. Установи [.NET 8 SDK](https://dotnet.microsoft.com/download) (+ `dotnet workload install android` для Android).
+2. Собери: `dotnet build Ncode.sln` (Windows + headless) или `dotnet build -p:DefineConstants=ANDROID` для проверки Android-веток
+3. Запусти редактор: `editor.bat` (или `dotnet Ncode.Editor/bin/Debug/net8.0/Ncode.Editor.dll`)
+4. Или запусти файл напрямую: `ncode.bat игра.ncode` / `dotnet Ncode/bin/Debug/net8.0-windows/Ncode.dll игра.ncode` (Windows с окном) / `dotnet Ncode/bin/Debug/net8.0/Ncode.dll игра.ncode` (headless для тестов)
 
 ## Документация
 

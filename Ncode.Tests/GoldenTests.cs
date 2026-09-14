@@ -16,12 +16,11 @@ public sealed class GoldenTests
         var baseDir = AppContext.BaseDirectory;
         var direct = Path.Combine(baseDir, "Ncode.dll");
         if (File.Exists(direct)) return direct;
-        string[] tfms = OperatingSystem.IsWindows() ? new[] { "net8.0-windows", "net8.0" } : new[] { "net8.0", "net8.0-windows" };
         var dir = new DirectoryInfo(baseDir);
         for (int i = 0; i < 6 && dir != null; i++)
         {
             foreach (var cfg in new[] { "Debug", "Release" })
-            foreach (var tfm in tfms)
+            foreach (var tfm in new[] { "net8.0-windows", "net8.0" })
             {
                 var cand = Path.Combine(dir.FullName, "Ncode", "bin", cfg, tfm, "Ncode.dll");
                 if (File.Exists(cand)) return cand;
