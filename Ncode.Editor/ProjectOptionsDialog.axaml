@@ -1,0 +1,89 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Ncode.Editor.ProjectOptionsDialog"
+        Title="Параметры проекта"
+        Width="460" Height="480"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Background="#141413" Foreground="#FAF9F5">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Border Grid.Row="0" BorderBrush="#30302E" BorderThickness="0,0,0,1" Padding="28,22,28,18">
+            <StackPanel Spacing="3">
+                <TextBlock Text="Параметры проекта" FontFamily="Georgia, serif"
+                           FontSize="20" FontWeight="Medium" Foreground="#FAF9F5"/>
+                <TextBlock Name="ProjectSubtitleText" Text="Загрузка..."
+                           FontSize="13" Foreground="#5E5D59"/>
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1">
+            <Border Padding="28,22,28,8">
+            <StackPanel>
+
+                <Border BorderBrush="#30302E" BorderThickness="0,0,0,1" Padding="0,0,0,18" Margin="0,0,0,18">
+                    <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Название" Foreground="#5E5D59" FontSize="13" Margin="0,0,0,11" VerticalAlignment="Center"/>
+                        <TextBlock Name="ProjectNameText" Grid.Row="0" Grid.Column="1" Foreground="#FAF9F5" FontSize="13" FontWeight="Medium" Margin="0,0,0,11" VerticalAlignment="Center"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Расположение" Foreground="#5E5D59" FontSize="13" Margin="0,0,0,11" VerticalAlignment="Center"/>
+                        <TextBlock Name="ProjectPathText" Grid.Row="1" Grid.Column="1" Foreground="#87867F" FontSize="12" Margin="0,0,0,11" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Главный файл" Foreground="#5E5D59" FontSize="13" VerticalAlignment="Center"/>
+                        <DockPanel Grid.Row="2" Grid.Column="1">
+                            <Button Name="ChangeMainFileBtn" DockPanel.Dock="Right" Classes="accent"
+                                    Content="Изменить" Padding="9,4" FontSize="12" CornerRadius="4"/>
+                            <TextBlock Name="MainFileText" Foreground="#D97757" FontSize="13" FontWeight="Medium"
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        </DockPanel>
+                    </Grid>
+                </Border>
+
+                <Border BorderBrush="#30302E" BorderThickness="0,0,0,1" Padding="0,0,0,18" Margin="0,0,0,18">
+                    <StackPanel Spacing="8">
+                        <DockPanel>
+                            <TextBlock Text="Архив проекта" FontFamily="Georgia, serif"
+                                       FontSize="14" FontWeight="Medium" Foreground="#FAF9F5" VerticalAlignment="Center"/>
+                            <TextBlock Text=".nproject" FontSize="11" Foreground="#5E5D59"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <TextBlock Text="Упаковка скриптов и медиа в единый сжатый архив для переноса."
+                                   FontSize="12" Foreground="#5E5D59" TextWrapping="Wrap"/>
+                        <Button Name="ExportBtn" Classes="accent" Content="Экспортировать .nproject"
+                                Padding="12,5" CornerRadius="4" HorizontalAlignment="Left" FontSize="12"/>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Name="ExeBuildSection" Spacing="8">
+                    <DockPanel>
+                        <TextBlock Text="Сборка для Windows" FontFamily="Georgia, serif"
+                                   FontSize="14" FontWeight="Medium" Foreground="#FAF9F5" VerticalAlignment="Center"/>
+                        <TextBlock Text=".exe" FontSize="11" Foreground="#5E5D59"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <TextBlock Text="Исполняемый файл без консоли. Иконка, заголовок и масштаб настраиваются в мастере."
+                               FontSize="12" Foreground="#5E5D59" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
+                        <Button Name="ExportExeBtn" Classes="accent" Content="Настроить и собрать .exe"
+                                Padding="12,5" CornerRadius="4" FontSize="12"/>
+                        <Border Name="ProjectTypeBadge" BorderBrush="#30302E" BorderThickness="1"
+                                CornerRadius="4" Padding="8,5" VerticalAlignment="Center">
+                            <TextBlock Name="ProjectTypeText" Text="2D" FontSize="11"
+                                       FontWeight="Medium" Foreground="#7AB868"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
+                <TextBlock Name="StatusText" Foreground="#7AB868" FontSize="12"
+                           TextWrapping="Wrap" IsVisible="False" Margin="0,14,0,0"/>
+            </StackPanel>
+            </Border>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" BorderBrush="#30302E" BorderThickness="0,1,0,0" Padding="28,12">
+            <Button Name="CloseButton" Classes="secondary" Content="Закрыть"
+                    Padding="14,5" CornerRadius="4" FontSize="12" HorizontalAlignment="Right"/>
+        </Border>
+    </Grid>
+</Window>

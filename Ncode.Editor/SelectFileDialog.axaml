@@ -1,13 +1,38 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Ncode.Editor.SelectFileDialog"
-        Title="Открыть файл" Width="400" Height="180" WindowStartupLocation="CenterOwner">
-    <StackPanel Margin="16" Spacing="10" Background="#1E1E2E">
-        <TextBlock Text="game.ncode не найден. Что открыть?" FontWeight="SemiBold" Foreground="#CDD6F4"/>
-        <ComboBox Name="FileCombo" HorizontalAlignment="Stretch" Background="#11111B" Foreground="#CDD6F4"/>
-        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-            <Button Name="CancelButton2" Content="Отмена"/>
-            <Button Name="OpenButton" Classes="accent" Content="Открыть"/>
-        </StackPanel>
-    </StackPanel>
+        Title="Выбор файла" Width="460" Height="240"
+        WindowStartupLocation="CenterOwner" CanResize="False"
+        Background="#141413" Foreground="#FAF9F5">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,0,0,1" Padding="18,12">
+            <DockPanel>
+                <Border Width="32" Height="32" CornerRadius="4" Background="#261E1A" BorderBrush="#D97757" BorderThickness="1"
+                        Margin="0,0,12,0" DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <TextBlock Text="N" FontFamily="Georgia, serif" FontSize="14" FontWeight="Bold" Foreground="#D97757"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Выбор файла проекта" FontFamily="Georgia, serif" FontSize="15" FontWeight="SemiBold" Foreground="#FAF9F5"/>
+                    <TextBlock Text="Укажите скрипт для открытия" FontSize="11" Foreground="#87867F"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Row="1" Padding="24,18" Background="#141413">
+            <StackPanel Spacing="10" VerticalAlignment="Center">
+                <TextBlock Name="PromptText" Text="game.ncode не найден. Выберите файл:" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                <ComboBox Name="FileCombo" HorizontalAlignment="Stretch" Padding="10,6"
+                          Background="#1E1E1C" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="2" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,1,0,0" Padding="18,12">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button Name="CancelButton2" Classes="secondary" Content="Отмена" Padding="12,5" CornerRadius="4" FontSize="12"/>
+                <Button Name="OpenButton" Classes="accent" Content="Открыть файл" Padding="14,5" CornerRadius="4" FontSize="12"/>
+            </StackPanel>
+        </Border>
+    </Grid>
 </Window>

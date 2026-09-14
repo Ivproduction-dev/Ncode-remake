@@ -1,25 +1,111 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Ncode.Editor.NewProjectWizard"
-        Title="Новый проект" Width="440" Height="230" WindowStartupLocation="CenterOwner">
-    <StackPanel Margin="16" Spacing="10" Background="#1E1E2E">
-        <StackPanel Name="Step1" Spacing="10">
-            <TextBlock Text="Имя проекта" FontWeight="SemiBold" Foreground="#CDD6F4"/>
-            <TextBox Name="NameBox" PlaceholderText="МояИгра" Background="#11111B" Foreground="#CDD6F4"/>
-            <CheckBox Name="Is2DCheck" Content="2Д проект" Foreground="#CDD6F4"/>
-            <TextBlock Name="ErrorText" Foreground="#F38BA8" IsVisible="False"/>
-            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                <Button Name="CancelButton" Content="Отмена"/>
-                <Button Name="NextButton" Classes="accent" Content="Продолжить"/>
-            </StackPanel>
-        </StackPanel>
-        <StackPanel Name="Step2" Spacing="10" IsVisible="False">
-            <TextBlock Text="Все ли правильно?" FontWeight="SemiBold" Foreground="#CDD6F4"/>
-            <TextBlock Name="PathText" TextWrapping="Wrap" Foreground="#CDD6F4" Opacity="0.8"/>
-            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                <Button Name="NoButton" Content="Нет"/>
-                <Button Name="YesButton" Classes="accent" Content="Да"/>
-            </StackPanel>
-        </StackPanel>
-    </StackPanel>
+        Title="Новый проект" Width="560" Height="450"
+        WindowStartupLocation="CenterOwner" CanResize="False"
+        Background="#141413" Foreground="#FAF9F5">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,0,0,1" Padding="20,16">
+            <DockPanel>
+                <Border Width="38" Height="38" CornerRadius="4" Background="#C96442" Margin="0,0,14,0" DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <TextBlock Text="N" FontFamily="Georgia, serif" FontSize="20" FontWeight="Bold" Foreground="#FAF9F5"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Мастер создания проекта" FontFamily="Georgia, serif" FontSize="17" FontWeight="SemiBold" Foreground="#FAF9F5"/>
+                    <TextBlock Name="SubtitleText" Text="Шаг 1 из 2: Параметры и структура проекта" FontSize="12" Foreground="#87867F" Margin="0,2,0,0"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Row="1" Padding="24,20" Background="#141413">
+            <Grid>
+                <StackPanel Name="Step1" Spacing="14">
+                    <StackPanel Spacing="6">
+                        <DockPanel>
+                            <TextBlock Text="Имя проекта" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                            <TextBlock Text="буквы, цифры, дефис" FontSize="11" Foreground="#87867F" HorizontalAlignment="Right"/>
+                        </DockPanel>
+                        <TextBox Name="NameBox" PlaceholderText="МояИгра" Padding="10,6" FontSize="13"
+                                 Background="#1E1E1C" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Папка для проектов" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBox Name="DirBox" Padding="10,6" FontSize="13"
+                                     Background="#1E1E1C" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"
+                                     VerticalAlignment="Center"/>
+                            <Button Name="BrowseButton" Grid.Column="1" Classes="secondary" Content="Обзор..." Margin="8,0,0,0" VerticalAlignment="Center" Padding="10,5" CornerRadius="4" FontSize="12"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <Border Background="#1E1E1C" BorderBrush="#30302E" BorderThickness="1" CornerRadius="4" Padding="14,12">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <CheckBox Name="Is2DCheck" IsChecked="True" VerticalAlignment="Top" Margin="0,2,10,0"/>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="2D игра с игровым окном" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                                    <Border Background="#2D281E" BorderBrush="#C96442" BorderThickness="1" CornerRadius="4" Padding="6,1">
+                                        <TextBlock Text="РЕКОМЕНДУЕТСЯ" FontSize="10" FontWeight="Bold" Foreground="#D97757"/>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="Создает готовый шаблон: графическое окно 800×600, настройки экрана settings.ncode и сцену game.ncode."
+                                           FontSize="12" Foreground="#87867F" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Name="ErrorBox" Background="#2A1B1B" BorderBrush="#B53333" BorderThickness="1" CornerRadius="4" Padding="12,8" IsVisible="False">
+                        <TextBlock Name="ErrorText" Foreground="#FAF9F5" FontSize="12" TextWrapping="Wrap"/>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Name="Step2" Spacing="14" IsVisible="False">
+                    <TextBlock Text="Готово к созданию проекта" FontFamily="Georgia, serif" FontWeight="SemiBold" FontSize="16" Foreground="#FAF9F5"/>
+
+                    <Border Background="#1E1E1C" BorderBrush="#30302E" BorderThickness="1" CornerRadius="4" Padding="16,14">
+                        <StackPanel Spacing="10">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Text="Путь:" Foreground="#87867F" Width="80" FontSize="12"/>
+                                <TextBlock Name="PathText" Grid.Column="1" TextWrapping="Wrap" Foreground="#D97757" FontWeight="SemiBold" FontSize="12"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Text="Шаблон:" Foreground="#87867F" Width="80" FontSize="12"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                    <Border Background="#262624" BorderBrush="#30302E" BorderThickness="1" CornerRadius="4" Padding="8,2">
+                                        <TextBlock Text="2D Engine" FontSize="11" Foreground="#FAF9F5" FontWeight="SemiBold"/>
+                                    </Border>
+                                    <Border Background="#1E281E" BorderBrush="#788F69" BorderThickness="1" CornerRadius="4" Padding="8,2">
+                                        <TextBlock Text="Ncode Framework" FontSize="11" Foreground="#788F69"/>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Text="Файлы:" Foreground="#87867F" Width="80" FontSize="12"/>
+                                <TextBlock Text="main.ncode, settings.ncode, game.ncode" Grid.Column="1" Foreground="#B0AEA5" FontSize="12"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#192219" BorderBrush="#788F69" BorderThickness="1" CornerRadius="4" Padding="12,10">
+                        <TextBlock Text="После создания проект будет автоматически открыт в редакторе Ncode Studio."
+                                   Foreground="#8FA87B" FontSize="12" TextWrapping="Wrap"/>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="2" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,1,0,0" Padding="20,12">
+            <DockPanel>
+                <Button Name="CancelButton" Classes="secondary" Content="Отмена" DockPanel.Dock="Left" Padding="12,5" CornerRadius="4" FontSize="12"/>
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button Name="NoButton" Classes="secondary" Content="Назад" IsVisible="False" Padding="12,5" CornerRadius="4" FontSize="12"/>
+                    <Button Name="NextButton" Classes="accent" Content="Продолжить →" Padding="14,5" CornerRadius="4" FontSize="12"/>
+                    <Button Name="YesButton" Classes="accent" Content="Создать проект" IsVisible="False" Padding="14,5" CornerRadius="4" FontSize="12"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
 </Window>

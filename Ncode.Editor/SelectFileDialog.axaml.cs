@@ -10,9 +10,10 @@ public partial class SelectFileDialog : Window
 
     public SelectFileDialog() : this(new List<string>(), ".") { }
 
-    public SelectFileDialog(List<string> files, string projectDir)
+    public SelectFileDialog(List<string> files, string projectDir, string prompt = "game.ncode не найден. Что открыть?")
     {
         InitializeComponent();
+        PromptText.Text = prompt;
         foreach (var f in files)
             FileCombo.Items.Add(new ComboBoxItem { Content = Path.GetRelativePath(projectDir, f), Tag = f });
         if (FileCombo.Items.Count > 0)

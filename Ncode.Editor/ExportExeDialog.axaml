@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Ncode.Editor.ExportExeDialog"
+        Title="Экспорт 2D игры в .exe" Width="600" Height="580"
+        WindowStartupLocation="CenterOwner" CanResize="False"
+        Background="#141413" Foreground="#FAF9F5">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,0,0,1" Padding="20,16">
+            <DockPanel>
+                <Border Width="40" Height="40" CornerRadius="4" Background="#C96442" Margin="0,0,14,0" DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <TextBlock Text="EXE" FontFamily="Georgia, serif" FontSize="14" FontWeight="Bold" Foreground="#FAF9F5"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Экспорт 2D игры (.exe)" FontFamily="Georgia, serif" FontSize="17" FontWeight="SemiBold" Foreground="#FAF9F5"/>
+                    <TextBlock Text="Сборка игры в исполняемый файл без консоли Windows" FontSize="12" Foreground="#87867F" Margin="0,2,0,0"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" Padding="24,18">
+            <StackPanel Spacing="14">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Название игры и окна" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                    <TextBox Name="TitleBox" PlaceholderText="Моя Игра" Padding="10,6" FontSize="13"
+                             Background="#1E1E1C" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"/>
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Главный скрипт запуска (точка входа)" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                    <ComboBox Name="MainFileCombo" HorizontalAlignment="Stretch" Padding="10,6"
+                              Background="#1E1E1C" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"/>
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <DockPanel>
+                        <TextBlock Text="Иконка игры (.ico или .png)" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                        <TextBlock Text="необязательно" FontSize="11" Foreground="#87867F" HorizontalAlignment="Right"/>
+                    </DockPanel>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Name="IconBox" PlaceholderText="Выберите файл иконки..." Padding="10,6" FontSize="13"
+                                 Background="#1E1E1C" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"
+                                 VerticalAlignment="Center"/>
+                        <Button Name="BrowseIconBtn" Grid.Column="1" Classes="secondary" Content="Обзор..." Margin="8,0,0,0" VerticalAlignment="Center" Padding="10,5" CornerRadius="4" FontSize="12"/>
+                    </Grid>
+                </StackPanel>
+
+                <Border Background="#1E1E1C" BorderBrush="#30302E" BorderThickness="1" CornerRadius="4" Padding="16,14">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Параметры игрового окна" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                        <Border Height="1" Background="#2A2A27"/>
+                        
+                        <CheckBox Name="ResizableCheck" IsChecked="True" Foreground="#FAF9F5">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Разрешить масштабирование окна" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                                <TextBlock Text="Игрок сможет изменять размер окна мышью и разворачивать на весь экран" FontSize="11" Foreground="#87867F"/>
+                            </StackPanel>
+                        </CheckBox>
+
+                        <CheckBox Name="FullscreenCheck" IsChecked="False" Foreground="#FAF9F5">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Запуск на весь экран (Fullscreen)" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                                <TextBlock Text="Окно игры сразу откроется на весь экран монитора" FontSize="11" Foreground="#87867F"/>
+                            </StackPanel>
+                        </CheckBox>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Папка для сохранения сборки" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Name="OutputDirBox" Padding="10,6" FontSize="13"
+                                 Background="#1E1E1C" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"
+                                 VerticalAlignment="Center"/>
+                        <Button Name="BrowseOutputBtn" Grid.Column="1" Classes="secondary" Content="Выбрать..." Margin="8,0,0,0" VerticalAlignment="Center" Padding="10,5" CornerRadius="4" FontSize="12"/>
+                    </Grid>
+                </StackPanel>
+
+                <Border Name="StatusCard" Background="#192819" BorderBrush="#788F69" BorderThickness="1" CornerRadius="4" Padding="12,10" IsVisible="False">
+                    <StackPanel Spacing="6">
+                        <ProgressBar Name="BuildProgress" IsIndeterminate="True" Height="4" CornerRadius="2"
+                                     Foreground="#C96442" Background="#262624"/>
+                        <TextBlock Name="StatusText" Foreground="#8FA87B" FontSize="12" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,1,0,0" Padding="20,12">
+            <DockPanel>
+                <Button Name="CancelBtn" Classes="secondary" Content="Отмена" DockPanel.Dock="Left" Padding="12,5" CornerRadius="4" FontSize="12"/>
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button Name="OpenFolderBtn" Classes="secondary" Content="Показать в Проводнике" IsVisible="False" Padding="12,5" CornerRadius="4" FontSize="12"/>
+                    <Button Name="BuildBtn" Classes="accent" Content="Собрать .exe" Padding="14,5" CornerRadius="4" FontSize="12"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

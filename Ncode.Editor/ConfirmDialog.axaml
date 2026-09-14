@@ -1,0 +1,38 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Ncode.Editor.ConfirmDialog"
+        Title="Подтверждение" Width="460" Height="220"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Background="#141413" Foreground="#FAF9F5">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,0,0,1" Padding="18,12">
+            <DockPanel>
+                <Border Width="32" Height="32" CornerRadius="4" Background="#261E1A" BorderBrush="#D97757" BorderThickness="1"
+                        Margin="0,0,12,0" DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <TextBlock Text="?" FontSize="16" FontWeight="Bold" Foreground="#D97757"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <TextBlock Text="Подтверждение действия" FontFamily="Georgia, serif" FontSize="15" FontWeight="SemiBold"
+                           Foreground="#FAF9F5" VerticalAlignment="Center"/>
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Row="1" Padding="24,18" Background="#141413">
+            <TextBlock Name="MessageText"
+                       Text="Подтвердите действие"
+                       TextWrapping="Wrap"
+                       FontSize="13"
+                       Foreground="#FAF9F5"
+                       VerticalAlignment="Center"/>
+        </Border>
+
+        <Border Grid.Row="2" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,1,0,0" Padding="18,12">
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                <Button Name="NoButton" Classes="secondary" Content="Отмена" Padding="12,5" CornerRadius="4" FontSize="12"/>
+                <Button Name="YesButton" Classes="accent" Content="Подтвердить" Padding="14,5" CornerRadius="4" FontSize="12"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

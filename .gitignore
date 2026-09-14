@@ -1,10 +1,47 @@
+# Build
 [Bb]in/
 [Oo]bj/
+out/
+publish/
+*.nupkg
+*.snupkg
+*.exe
+**/[Сс]борка*/
+**/[Bb]uild*/
+
+# IDE
 .vs/
+.idea/
+.vscode/
 *.user
 *.suo
+*.DotSettings.user
+
+# AI-ассистенты
+.gemini/
+.opencode/
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+
+# Временные файлы
+*.log
+*.tmp
+*.bak
+*.swp
 TestResults/
-__pycache__/
-*.pyc
-.venv/
-test*.ncode
+*.coverage
+*.coveragexml
+coverage*/
+
+# Локальные игровые проекты и тестовые скрипты (не в репозиторий)
+scratch/
+тестпапка/
+Моя игра/
+гыгы/
+пакарабан/
+ы/

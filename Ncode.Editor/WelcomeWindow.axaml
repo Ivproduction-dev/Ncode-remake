@@ -1,0 +1,106 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Ncode.Editor.WelcomeWindow"
+        Title="Ncode Studio - Проекты"
+        Width="920" Height="600"
+        MinWidth="700" MinHeight="450"
+        WindowStartupLocation="CenterScreen"
+        Background="#141413" Foreground="#FAF9F5">
+
+    <Window.Styles>
+        <Style Selector="Button.header-more">
+            <Setter Property="Background" Value="#262624"/>
+            <Setter Property="Foreground" Value="#FAF9F5"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#30302E"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.header-more:pointerover">
+            <Setter Property="Background" Value="#343431"/>
+            <Setter Property="BorderBrush" Value="#C96442"/>
+        </Style>
+
+        <Style Selector="Button.fab">
+            <Setter Property="Background" Value="#C96442"/>
+            <Setter Property="Foreground" Value="#FAF9F5"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="28"/>
+            <Setter Property="Width" Value="56"/>
+            <Setter Property="Height" Value="56"/>
+            <Setter Property="FontSize" Value="28"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.fab:pointerover">
+            <Setter Property="Background" Value="#D97757"/>
+        </Style>
+
+        <Style Selector="Button.card-more">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#87867F"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.card-more:pointerover">
+            <Setter Property="Background" Value="#343431"/>
+            <Setter Property="Foreground" Value="#FAF9F5"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="64,*">
+        <Border Grid.Row="0" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,0,0,1" Padding="24,0">
+            <DockPanel VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" DockPanel.Dock="Left">
+                    <Image Name="AppLogoImage" Width="30" Height="30" Stretch="Uniform" IsVisible="False"/>
+                    <Border Name="FallbackLogo" Width="30" Height="30" CornerRadius="4" Background="#C96442">
+                        <TextBlock Text="N" Foreground="#FAF9F5" FontWeight="Bold" FontSize="17"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Ncode Studio" FontFamily="Georgia, serif" FontSize="19" FontWeight="SemiBold" Foreground="#FAF9F5" VerticalAlignment="Center"/>
+                    <TextBlock Text="Проекты" FontSize="13" Foreground="#87867F" VerticalAlignment="Center" Margin="6,2,0,0"/>
+                </StackPanel>
+
+                <Button Name="HeaderMoreButton" DockPanel.Dock="Right" Classes="header-more" Content="..." ToolTip.Tip="Опции">
+                    <Button.Flyout>
+                        <MenuFlyout Placement="BottomEdgeAlignedRight">
+                            <MenuItem Name="MenuImport" Header="Импортировать проект (.nproject)..."/>
+                            <MenuItem Name="MenuOpenFolder" Header="Открыть папку с диска..."/>
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="24,20">
+                <StackPanel>
+                    <Border Name="EmptyState" Background="#1E1E1C" BorderBrush="#30302E" BorderThickness="1"
+                            CornerRadius="4" Padding="40,48" Margin="0,30,0,0" HorizontalAlignment="Center" MaxWidth="500" IsVisible="False">
+                        <StackPanel Spacing="12" HorizontalAlignment="Center">
+                            <TextBlock Text="Нет сохраненных проектов" FontFamily="Georgia, serif" FontSize="18" FontWeight="SemiBold"
+                                       Foreground="#FAF9F5" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Нажмите кнопку + в правом нижнем углу для создания нового проекта, или используйте меню ... для импорта архива .nproject."
+                                       FontSize="13" Foreground="#87867F" TextWrapping="Wrap" TextAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <WrapPanel Name="ProjectsPanel" Orientation="Horizontal" Margin="0"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Button Name="CreateProjectFab" Classes="fab" Content="+"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="0,0,48,36" ToolTip.Tip="Создать новый проект"/>
+        </Grid>
+    </Grid>
+</Window>

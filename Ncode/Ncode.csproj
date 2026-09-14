@@ -1,11 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType Condition="'$(GameOutputType)' != ''">$(GameOutputType)</OutputType>
+    <OutputType Condition="'$(GameOutputType)' == ''">Exe</OutputType>
+    <ApplicationIcon Condition="'$(AppIcon)' != '' and Exists('$(AppIcon)')">$(AppIcon)</ApplicationIcon>
+    <TargetName Condition="'$(GameTargetName)' != ''">$(GameTargetName)</TargetName>
+    <AssemblyName Condition="'$(GameTargetName)' != ''">$(GameTargetName)</AssemblyName>
     <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
+  <ItemGroup Condition="'$(GameBundleZip)' != '' and Exists('$(GameBundleZip)')">
+    <EmbeddedResource Include="$(GameBundleZip)">
+      <LogicalName>GameBundle.zip</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Ncode.Core\Ncode.Core.csproj" />
+  </ItemGroup>
 
 </Project>

@@ -1,0 +1,63 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Ncode.Editor.ImportDialog"
+        Title="Импорт проекта" Width="500" Height="320"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Background="#141413" Foreground="#FAF9F5">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,0,0,1" Padding="20,16">
+            <DockPanel>
+                <Border Width="38" Height="38" CornerRadius="4" Background="#C96442" Margin="0,0,14,0" DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <TextBlock Text="PKG" FontFamily="Georgia, serif" FontSize="12" FontWeight="Bold" Foreground="#FAF9F5"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Импорт архива проекта" FontFamily="Georgia, serif" FontSize="17" FontWeight="SemiBold" Foreground="#FAF9F5"/>
+                    <TextBlock Text="Распаковка и валидация ресурсов .nproject" FontSize="12" Foreground="#87867F" Margin="0,2,0,0"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Row="1" Padding="24,18" Background="#141413">
+            <StackPanel Spacing="14">
+                <Border Background="#1E1E1C" BorderBrush="#30302E" BorderThickness="1" CornerRadius="4" Padding="14,12">
+                    <StackPanel Spacing="10">
+                        <DockPanel>
+                            <TextBlock Name="StatusText" Text="Подготовка к распаковке..."
+                                       FontSize="13" Foreground="#FAF9F5" FontWeight="SemiBold"/>
+                            <Border Background="#261E1A" BorderBrush="#D97757" BorderThickness="1" CornerRadius="4" Padding="6,1" HorizontalAlignment="Right">
+                                <TextBlock Text="РАСПАКОВКА" FontSize="10" FontWeight="Bold" Foreground="#D97757"/>
+                            </Border>
+                        </DockPanel>
+
+                        <ProgressBar Name="ImportProgress" IsIndeterminate="True"
+                                     Height="4" CornerRadius="2"
+                                     Foreground="#C96442" Background="#262624"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#1E1E1C" CornerRadius="4" Padding="14,12" BorderBrush="#30302E" BorderThickness="1">
+                    <StackPanel Spacing="6">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Background="#2D281E" BorderBrush="#DEB368" BorderThickness="1" CornerRadius="4" Padding="6,1">
+                                <TextBlock Text="СОВЕТ ДНЯ" FontSize="10" FontWeight="Bold" Foreground="#DEB368"/>
+                            </Border>
+                            <TextBlock Text="Возможности движка" FontSize="11" Foreground="#87867F" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Name="FactText"
+                                   Text="Ncode Engine поддерживает гибкую компонентную архитектуру."
+                                   TextWrapping="Wrap" FontSize="12" Foreground="#FAF9F5"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="2" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,1,0,0" Padding="20,12">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button Name="CloseButton" Classes="accent" Content="Готово" IsVisible="False" Padding="14,5" CornerRadius="4" FontSize="12"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

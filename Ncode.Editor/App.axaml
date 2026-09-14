@@ -1,10 +1,73 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Ncode.Editor.App"
-              RequestedThemeVariant="Dark">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             RequestedThemeVariant="Dark">
+    <Application.Resources>
+        <Color x:Key="SystemAccentColor">#C96442</Color>
+        <Color x:Key="SystemAccentColorDark1">#B85635</Color>
+        <Color x:Key="SystemAccentColorDark2">#9F482B</Color>
+        <Color x:Key="SystemAccentColorDark3">#82371D</Color>
+        <Color x:Key="SystemAccentColorLight1">#D97757</Color>
+        <Color x:Key="SystemAccentColorLight2">#E28E72</Color>
+        <Color x:Key="SystemAccentColorLight3">#EAA78F</Color>
+    </Application.Resources>
 
     <Application.Styles>
         <FluentTheme />
+        <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+
+        <Style Selector="Button">
+            <Setter Property="Background" Value="#262624"/>
+            <Setter Property="Foreground" Value="#FAF9F5"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#30302E"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button:pointerover">
+            <Setter Property="Background" Value="#343431"/>
+            <Setter Property="BorderBrush" Value="#C96442"/>
+        </Style>
+        <Style Selector="Button:pressed">
+            <Setter Property="Background" Value="#2A2A27"/>
+        </Style>
+        <Style Selector="Button:disabled">
+            <Setter Property="Background" Value="#1E1E1C"/>
+            <Setter Property="Foreground" Value="#5E5D59"/>
+            <Setter Property="BorderBrush" Value="#30302E"/>
+        </Style>
+
+        <Style Selector="Button.accent">
+            <Setter Property="Background" Value="#C96442"/>
+            <Setter Property="Foreground" Value="#FAF9F5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#C96442"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.accent:pointerover">
+            <Setter Property="Background" Value="#D97757"/>
+            <Setter Property="BorderBrush" Value="#D97757"/>
+        </Style>
+
+        <Style Selector="Button.secondary">
+            <Setter Property="Background" Value="#262624"/>
+            <Setter Property="Foreground" Value="#FAF9F5"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#30302E"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.secondary:pointerover">
+            <Setter Property="Background" Value="#343431"/>
+            <Setter Property="BorderBrush" Value="#3D3D3A"/>
+        </Style>
     </Application.Styles>
 </Application>

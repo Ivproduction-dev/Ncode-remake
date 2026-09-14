@@ -2,50 +2,257 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="750"
+        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
         x:Class="Ncode.Editor.MainWindow"
-        Title="Ncode" Width="1200" Height="750" Background="#1E1E2E">
-    <DockPanel>
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="10,8">
-            <Button Name="NewProjectButton" Content="Новый проект" ToolTip.Tip="Создать проект"/>
-            <Button Name="OpenProjectButton" Content="Открыть проект" ToolTip.Tip="Открыть папку проекта"/>
-            <Button Name="OpenFolderButton" Content="Папка" ToolTip.Tip="Открыть папку"/>
-            <Button Name="SaveButton" Content="Сохранить" ToolTip.Tip="Сохранить файл"/>
-            <Button Name="RunButton" Classes="accent" Content="Запустить" ToolTip.Tip="Запустить"/>
-            <Button Name="StopButton" Content="Стоп" IsEnabled="False" ToolTip.Tip="Остановить"/>
-            <CheckBox Name="HighlightCheck" Content="Подсветка" IsChecked="True" VerticalAlignment="Center"/>
-        </StackPanel>
-        <Border DockPanel.Dock="Bottom" Background="#89B4FA" Padding="10,4">
-            <Grid ColumnDefinitions="*,Auto,Auto">
-                <TextBlock Name="StatusText" Foreground="#11111B" VerticalAlignment="Center" Text="Ncode"/>
-                <TextBlock Name="FileText" Grid.Column="1" Foreground="#11111B" VerticalAlignment="Center" Margin="16,0,0,0"/>
-                <TextBlock Name="CaretText" Grid.Column="2" Foreground="#11111B" VerticalAlignment="Center" Margin="16,0,0,0"/>
-            </Grid>
-        </Border>
-        <Border DockPanel.Dock="Bottom" Height="240" BorderThickness="0,1,0,0" BorderBrush="#3C3C3C" Padding="10,6">
-            <Grid RowDefinitions="Auto,*,Auto">
+        Title="Ncode Studio" Width="1280" Height="800"
+        MinWidth="800" MinHeight="500"
+        Background="#141413" Foreground="#FAF9F5">
+
+    <Window.Styles>
+        <Style Selector="Menu">
+            <Setter Property="Background" Value="#1B1B19"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush" Value="#30302E"/>
+        </Style>
+        <Style Selector="MenuItem">
+            <Setter Property="Foreground" Value="#B0AEA5"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <Style Selector="MenuItem:pointerover">
+            <Setter Property="Background" Value="#2D2D2A"/>
+            <Setter Property="Foreground" Value="#FAF9F5"/>
+        </Style>
+
+        <Style Selector="Button.toolbar">
+            <Setter Property="Background" Value="#262624"/>
+            <Setter Property="Foreground" Value="#FAF9F5"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#30302E"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.toolbar:pointerover">
+            <Setter Property="Background" Value="#343431"/>
+            <Setter Property="BorderBrush" Value="#C96442"/>
+        </Style>
+        <Style Selector="Button.run">
+            <Setter Property="Background" Value="#C96442"/>
+            <Setter Property="Foreground" Value="#FAF9F5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#C96442"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.run:pointerover">
+            <Setter Property="Background" Value="#D97757"/>
+            <Setter Property="BorderBrush" Value="#D97757"/>
+        </Style>
+        <Style Selector="Button.stop">
+            <Setter Property="Background" Value="#B53333"/>
+            <Setter Property="Foreground" Value="#FAF9F5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#B53333"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.stop:pointerover">
+            <Setter Property="Background" Value="#C74343"/>
+        </Style>
+        <Style Selector="Button.stop:disabled">
+            <Setter Property="Background" Value="#262624"/>
+            <Setter Property="Foreground" Value="#5E5D59"/>
+            <Setter Property="BorderBrush" Value="#30302E"/>
+        </Style>
+
+        <Style Selector="Button.tab-close">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#87867F"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="4,0"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style Selector="Button.tab-close:pointerover">
+            <Setter Property="Background" Value="#B53333"/>
+            <Setter Property="Foreground" Value="#FAF9F5"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid>
+        <DockPanel>
+            <Menu DockPanel.Dock="Top">
+                <MenuItem Header="Файл">
+                    <MenuItem Name="MenuNewFile" Header="Новый файл" InputGesture="Ctrl+N"/>
+                    <MenuItem Name="MenuNewProject" Header="Новый проект..."/>
+                    <Separator/>
+                    <MenuItem Name="MenuOpenFile" Header="Открыть файл..." InputGesture="Ctrl+O"/>
+                    <MenuItem Name="MenuOpenFolder" Header="Открыть папку проекта..."/>
+                    <Separator/>
+                    <MenuItem Name="MenuSave" Header="Сохранить" InputGesture="Ctrl+S"/>
+                    <MenuItem Name="MenuSaveAll" Header="Сохранить всё" InputGesture="Ctrl+Shift+S"/>
+                    <MenuItem Name="MenuCloseTab" Header="Закрыть вкладку" InputGesture="Ctrl+W"/>
+                    <Separator/>
+                    <MenuItem Name="MenuExit" Header="Выход"/>
+                </MenuItem>
+                <MenuItem Header="Проект">
+                    <MenuItem Name="MenuProjectOptions" Header="Опции проекта..."/>
+                    <Separator/>
+                    <MenuItem Name="MenuImportProject" Header="Импортировать проект (.nproject)..."/>
+                </MenuItem>
+                <MenuItem Header="Правка">
+                    <MenuItem Name="MenuClearOutput" Header="Очистить консоль"/>
+                </MenuItem>
+                <MenuItem Header="Вид">
+                    <CheckBox Name="MenuWordWrap" Content="Перенос строк (WordWrap)" Margin="6,2"/>
+                    <CheckBox Name="MenuHighlight" Content="Подсветка синтаксиса" IsChecked="True" Margin="6,2"/>
+                </MenuItem>
+                <MenuItem Header="Запуск">
+                    <MenuItem Name="MenuRun" Header="Запустить" InputGesture="F5"/>
+                    <MenuItem Name="MenuStop" Header="Остановить" InputGesture="Shift+F5"/>
+                </MenuItem>
+                <MenuItem Header="Справка">
+                    <MenuItem Name="MenuAbout" Header="О программе Ncode Studio"/>
+                </MenuItem>
+            </Menu>
+
+            <Border DockPanel.Dock="Top" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,0,0,1" Padding="10,6">
                 <DockPanel>
-                    <Button Name="ClearButton" DockPanel.Dock="Right" Content="Очистить"/>
-                    <TextBlock Text="ВЫВОД" FontWeight="SemiBold" VerticalAlignment="Center" Opacity="0.7"/>
-                </DockPanel>
-                <TextBox Name="OutputBox" Grid.Row="1" Margin="0,6" IsReadOnly="True" FontFamily="Consolas" FontSize="13"
-                         Background="#11111B" Foreground="#CDD6F4" CaretBrush="#F5C2E7" SelectionBrush="#45475A"
-                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
-                    <TextBox Name="InputBox" PlaceholderText="Ввод для спросить..." Width="400" Background="#11111B" Foreground="#CDD6F4"/>
-                    <Button Name="SendButton" Content="Отправить"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-        <Grid ColumnDefinitions="280,*">
-            <Border Grid.Column="0" Margin="10,0,4,0" BorderThickness="0,0,1,0" BorderBrush="#3C3C3C" Padding="0,0,8,0">
-                <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="ФАЙЛЫ" FontWeight="SemiBold" Opacity="0.7" Margin="0,0,0,6"/>
-                    <TreeView Name="FileTree" Background="Transparent" Foreground="#CDD6F4"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" DockPanel.Dock="Left">
+                        <Button Name="NewFileButton" Classes="toolbar" Content="+ Файл" ToolTip.Tip="Создать новый файл (Ctrl+N)"/>
+                        <Button Name="NewProjectButton" Classes="toolbar" Content="Новый проект" ToolTip.Tip="Мастер создания нового проекта"/>
+                        <Button Name="OpenFolderButton" Classes="toolbar" Content="Папка..." ToolTip.Tip="Открыть папку с кодом"/>
+                        <Button Name="SaveButton" Classes="toolbar" Content="Сохранить" ToolTip.Tip="Сохранить текущий файл (Ctrl+S)"/>
+                        <Rectangle Width="1" Fill="#30302E" Margin="4,2"/>
+                        <Button Name="RunButton" Classes="run" Content="Запустить (F5)" ToolTip.Tip="Сохранить и запустить проект (F5)"/>
+                        <Button Name="StopButton" Classes="stop" Content="Стоп" IsEnabled="False" ToolTip.Tip="Остановить выполнение (Shift+F5)"/>
+                        <Rectangle Width="1" Fill="#30302E" Margin="4,2"/>
+                        <CheckBox Name="WordWrapCheck" Content="Перенос строк" VerticalAlignment="Center" Margin="4,0" Foreground="#B0AEA5"/>
+                        <CheckBox Name="HighlightCheck" Content="Подсветка" IsChecked="True" VerticalAlignment="Center" Margin="4,0" Foreground="#B0AEA5"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" DockPanel.Dock="Right">
+                        <Button Name="MoreButton" Classes="toolbar" Content="..." ToolTip.Tip="Дополнительно" Padding="10,4">
+                            <Button.Flyout>
+                                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                    <MenuItem Name="FlyoutImport" Header="Импортировать проект..."/>
+                                    <MenuItem Name="FlyoutProjectOptions" Header="Опции проекта..."/>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Border Name="DiagBadge" Background="#262624" BorderBrush="#30302E" BorderThickness="1"
+                                CornerRadius="12" Padding="10,4" VerticalAlignment="Center" Cursor="Hand"
+                                ToolTip.Tip="Проверка кода проекта (нажмите для просмотра)">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse Name="DiagDot" Width="8" Height="8" Fill="#788F69" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Name="DiagText" Text="ОК" FontSize="11" FontWeight="SemiBold" Foreground="#B0AEA5" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Name="StatusBadge" Background="#262624" BorderBrush="#30302E" BorderThickness="1" CornerRadius="12" Padding="10,3" VerticalAlignment="Center">
+                            <TextBlock Name="StatusBadgeText" Text="ГОТОВ" FontSize="11" FontWeight="Bold" Foreground="#87867F"/>
+                        </Border>
+                    </StackPanel>
                 </DockPanel>
             </Border>
-            <TabControl Name="EditorTabs" Grid.Column="1" Margin="4,0,10,0"/>
-        </Grid>
-    </DockPanel>
+
+            <Border DockPanel.Dock="Bottom" Background="#1B1B19" BorderBrush="#30302E" BorderThickness="0,1,0,0" Padding="12,5">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                    <TextBlock Name="StatusText" Foreground="#B0AEA5" VerticalAlignment="Center" Text="Готов" FontSize="12"/>
+                    <TextBlock Name="ProjectDirText" Grid.Column="1" Foreground="#6E6D68" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Name="FileText" Grid.Column="2" Foreground="#D97757" FontWeight="SemiBold" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="12"/>
+                    <TextBlock Name="CaretText" Grid.Column="3" Foreground="#87867F" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="12"/>
+                    <Border Grid.Column="4" Background="#262624" BorderBrush="#30302E" BorderThickness="1" CornerRadius="4" Padding="6,1" VerticalAlignment="Center" Margin="16,0,0,0">
+                        <TextBlock Name="EncodingText" Foreground="#87867F" VerticalAlignment="Center" FontSize="11" Text="UTF-8"/>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Grid RowDefinitions="*,Auto,240">
+                <Grid Grid.Row="0" ColumnDefinitions="260,Auto,*">
+                    <Border Grid.Column="0" Background="#181816" BorderBrush="#30302E" BorderThickness="0,0,1,0">
+                        <DockPanel Margin="8,6">
+                            <DockPanel DockPanel.Dock="Top" Margin="2,0,2,6">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+                                    <Button Name="TreeNewFileBtn" Classes="toolbar" Content="+" Padding="6,2" ToolTip.Tip="Создать файл"/>
+                                    <Button Name="TreeRefreshBtn" Classes="toolbar" Content="R" Padding="6,2" ToolTip.Tip="Обновить проводник"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Ellipse Width="6" Height="6" Fill="#C96442" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="ПРОВОДНИК" FontFamily="Georgia, serif" FontWeight="SemiBold" FontSize="11" Foreground="#87867F" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <TreeView Name="FileTree" Background="Transparent" Foreground="#FAF9F5"/>
+                        </DockPanel>
+                    </Border>
+
+                    <GridSplitter Grid.Column="1" Width="4" Background="#262624" ResizeDirection="Columns"/>
+
+                    <Grid Grid.Column="2">
+                        <TabControl Name="EditorTabs" Background="#141413"
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                    HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+                        <Border Name="EmptyTabsPlaceholder" Background="#141413" IsVisible="False" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <StackPanel Spacing="10" HorizontalAlignment="Center">
+                                <TextBlock Text="Ncode Studio" FontFamily="Georgia, serif" FontSize="26" FontWeight="SemiBold" Foreground="#87867F" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Нажмите «+ Файл» (Ctrl+N) или откройте файл в проводнике слева" Foreground="#5E5D59" FontSize="14" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+
+                <GridSplitter Grid.Row="1" Height="4" Background="#262624" ResizeDirection="Rows"/>
+
+                <Border Grid.Row="2" Background="#141413" BorderBrush="#30302E" BorderThickness="0,1,0,0" Padding="10,6">
+                    <Grid RowDefinitions="Auto,*,Auto">
+                        <DockPanel Grid.Row="0" Margin="0,0,0,4">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+                                <Button Name="ClearButton" Classes="toolbar" Content="Очистить" Padding="8,3" FontSize="12"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse Width="6" Height="6" Fill="#788F69" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="КОНСОЛЬ ВЫВОДА" FontFamily="Georgia, serif" FontWeight="SemiBold" FontSize="11" Foreground="#87867F" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <TextBox Name="OutputBox" Grid.Row="1" Margin="0,4" IsReadOnly="True"
+                                 FontFamily="JetBrains Mono,Cascadia Code,Consolas,Courier New" FontSize="13"
+                                 Background="#181816" Foreground="#FAF9F5" BorderBrush="#30302E"
+                                 CaretBrush="#C96442" SelectionBrush="#343431"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+
+                        <DockPanel Grid.Row="2" Margin="0,4,0,0">
+                            <Button Name="SendButton" DockPanel.Dock="Right" Classes="toolbar" Content="Отправить" IsEnabled="False" Margin="6,0,0,0"/>
+                            <TextBox Name="InputBox" PlaceholderText="Ввод для команды 'спросить'..." IsEnabled="False"
+                                     Background="#1E1E1C" Foreground="#FAF9F5" BorderBrush="#30302E"/>
+                        </DockPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </DockPanel>
+
+        <Border Name="DiagPanel" IsVisible="False"
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="0,52,14,0" Width="430" MaxHeight="440"
+                Background="#1E1E1C" BorderBrush="#30302E" BorderThickness="1"
+                CornerRadius="4" Padding="14">
+            <Grid RowDefinitions="Auto,Auto,*">
+                <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                    <Button Name="DiagCloseBtn" DockPanel.Dock="Right" Classes="toolbar" Content="✕" Padding="6,2" FontSize="11" CornerRadius="4"/>
+                    <TextBlock Text="Диагностика проекта" FontFamily="Georgia, serif" FontWeight="SemiBold" FontSize="14" Foreground="#FAF9F5" VerticalAlignment="Center"/>
+                </DockPanel>
+                <Border Grid.Row="1" Height="1" Background="#30302E" Margin="0,0,0,8"/>
+                <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Name="DiagItemsPanel" Spacing="6"/>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
 </Window>
