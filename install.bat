@@ -18,7 +18,7 @@ if !DOTNET_MAJOR! geq 8 (
   dotnet --version
   goto :build
 ) else (
-  echo [!!] Found .NET !DOTNET_MAJOR!.x, need 8.x
+  echo [WARN] Found .NET !DOTNET_MAJOR!.x, need 8.x
   goto :install_dotnet
 )
 
@@ -30,7 +30,7 @@ echo.
 rem 1.1 Try user-local install via dotnet-install.ps1 - no admin needed
 where powershell >nul 2>&1
 if %errorlevel% neq 0 (
-  echo [!!] PowerShell not found, skipping user-local install
+  echo [WARN] PowerShell not found, skipping user-local install
   goto :need_admin_install
 )
 
@@ -40,7 +40,7 @@ if not exist "%DOTNET_INSTALL_DIR%" mkdir "%DOTNET_INSTALL_DIR%" >nul 2>&1
 echo Downloading dotnet-install.ps1 ^(user-local, no admin^)...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile $env:TEMP\dotnet-install.ps1 -UseBasicParsing; } catch { exit 1 }" >nul 2>&1
 if %errorlevel% neq 0 (
-  echo [!!] Failed to download dotnet-install.ps1
+  echo [WARN] Failed to download dotnet-install.ps1
   goto :need_admin_install
 )
 
@@ -125,7 +125,7 @@ rem Build Windows runtime - required
 echo [1/6] Windows runtime ^(net8.0-windows^)...
 dotnet build Ncode -c Release -f net8.0-windows --nologo
 if %errorlevel% neq 0 (
-  echo [!!] Windows build failed, trying net8.0...
+  echo [WARN] Windows build failed, trying net8.0...
   dotnet build Ncode -c Release -f net8.0 --nologo
   if %errorlevel% neq 0 (
     echo [ERROR] Runtime build failed
@@ -148,7 +148,7 @@ if %errorlevel% equ 0 (
 echo Workload android not found
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-  echo [!!] Need admin for workload install - skip for now
+  echo [WARN] Need admin for workload install - skip for now
   echo      Run install.bat as Administrator later or: dotnet workload install android
   goto :jdk_check
 )
@@ -158,12 +158,12 @@ powershell -NoProfile -Command "$p = Start-Process -FilePath 'dotnet' -ArgumentL
 if %errorlevel% equ 0 (
   echo [OK] Android workload installed
 ) else (
-  echo [!!] Workload install failed or timed out - trying without --skip-manifest-update...
+  echo [WARN] Workload install failed or timed out - trying without --skip-manifest-update...
   powershell -NoProfile -Command "$p = Start-Process -FilePath 'dotnet' -ArgumentList 'workload install android' -PassThru -NoNewWindow; if (-not $p.WaitForExit(300000)) { try { $p.Kill($true) } catch {}; exit 1 } else { exit $p.ExitCode }"
   if %errorlevel% equ 0 (
     echo [OK] Android workload installed
   ) else (
-    echo [!!] Android workload not installed - skip ^(run later: dotnet workload install android^)
+    echo [WARN] Android workload not installed - skip ^(run later: dotnet workload install android^)
   )
 )
 
@@ -171,22 +171,21 @@ if %errorlevel% equ 0 (
 rem Check JDK 17 for Android signing
 echo [3/6] Checking JDK 17 for Android signing...
 java -version 2>&1 | findstr "17\." >nul 2>&1
-if %errorlevel% neq 0 (
+if %errorlevel% equ 0 (
+  echo [OK] JDK 17 found
+) else (
+  echo JDK 17 not found, trying to install via winget...
+  where winget >nul 2>&1
+  if %errorlevel% equ 0 (
+    winget install Microsoft.OpenJDK.17 --silent --accept-package-agreements --accept-source-agreements >nul 2>&1
+    if %errorlevel% equ 0 echo [OK] JDK 17 installed
+  )
   where keytool >nul 2>&1
   if %errorlevel% neq 0 (
-    echo JDK 17 not found, trying to install via winget...
-    where winget >nul 2>&1
-    if %errorlevel% equ 0 (
-      winget install Microsoft.OpenJDK.17 --silent --accept-package-agreements --accept-source-agreements >nul 2>&1
-      if %errorlevel% equ 0 echo [OK] JDK 17 installed
-    )
-    where keytool >nul 2>&1
-    if %errorlevel% neq 0 echo [!!] keytool still not found - install JDK 17 manually: https://learn.microsoft.com/java/openjdk/download
+    echo [WARN] keytool still not found - install JDK 17 manually: https://learn.microsoft.com/java/openjdk/download
   ) else (
     echo [OK] keytool found
   )
-) else (
-  echo [OK] JDK 17 found
 )
 
 rem Check Android SDK
@@ -199,22 +198,22 @@ if exist "%ProgramFiles%\Android\Android Studio\bin\studio64.exe" set ANDROID_SD
 if %ANDROID_SDK_FOUND% equ 1 (
   echo [OK] Android SDK found
 ) else (
-  echo [!!] Android SDK not found - trying to install via winget...
+  echo [WARN] Android SDK not found - trying to install via winget...
   where winget >nul 2>&1
   if %errorlevel% equ 0 (
     winget install Google.AndroidStudio --silent --accept-package-agreements --accept-source-agreements >nul 2>&1
     if %errorlevel% equ 0 echo [OK] Android Studio installed - launch it once to finish SDK setup
   )
-  if %ANDROID_SDK_FOUND% equ 0 echo [!!] Android SDK still not found - install Android Studio manually: https://developer.android.com/studio
+  if %ANDROID_SDK_FOUND% equ 0 echo [WARN] Android SDK still not found - install Android Studio manually: https://developer.android.com/studio
 )
 
 rem Try Android runtime if workload exists - optional
 echo [5/6] Trying Android runtime ^(optional^)...
-dotnet build Ncode -c Release -f net8.0-android --nologo >nul 2>&1
+dotnet build Ncode.Android -c Release -f net8.0-android --nologo >nul 2>&1
 if %errorlevel% equ 0 (
   echo [OK] Android runtime built
 ) else (
-  echo [..] Android runtime not built ^(no TFM or workload^) - ok, Windows runtime ready
+  echo [..] Android runtime not built ^(no workload/SDK^) - ok, Windows runtime ready
 )
 
 rem Release APK signing - generate keystore if missing
@@ -229,7 +228,7 @@ if not exist "%KEYSTORE%" (
     keytool -genkeypair -keystore "%KEYSTORE%" -alias ncode -keyalg RSA -keysize 2048 -validity 10000 -storepass ncode123 -keypass ncode123 -dname "CN=Ncode,O=Ivproduction,C=RU" >nul 2>&1
     if exist "%KEYSTORE%" echo [OK] Keystore created
   ) else (
-    echo [!!] keytool not found ^(install JDK 17+^) - APK will be debug-signed
+    echo [WARN] keytool not found ^(install JDK 17+^) - APK will be debug-signed
   )
 ) else (
   echo [OK] Keystore exists at %KEYSTORE%
