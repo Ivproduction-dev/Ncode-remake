@@ -3028,50 +3028,7 @@ class Program
             else if (IsObjectOnScreen(text)) { ExecObjectOnScreen(text, no); i++; continue; }
             else if (IsGetSpeed(text)) { ExecGetSpeed(text, no); i++; continue; }
             else if (IsSetDirection(text)) { ExecSetDirection(text, no); i++; continue; }
-            else if (IsSet(text))
-            {
-                string rest = AfterFirstWord(text).Trim();
-                string name;
-                string val;
-                int brOpen = rest.IndexOf('[');
-                if (brOpen > 0)
-                {
-                    bool inQ = false;
-                    int brClose = -1;
-                    int depth = 0;
-                    for (int bi = brOpen; bi < rest.Length; bi++)
-                    {
-                        if (rest[bi] == '"') { inQ = !inQ; continue; }
-                        if (inQ) continue;
-                        if (rest[bi] == '[') depth++;
-                        else if (rest[bi] == ']')
-                        {
-                            depth--;
-                            if (depth == 0) { brClose = bi; break; }
-                        }
-                    }
-                    if (brClose > brOpen)
-                    {
-                        name = rest[..(brClose + 1)].Trim();
-                        val = rest[(brClose + 1)..].Trim();
-                        string tableName = name[..brOpen].Trim();
-                        string keyExpr = name[(brOpen + 1)..^1].Trim();
-                        if (!TryResolveVar(tableName, out var tv) || tv is not Dictionary<string, object> dict)
-                            throw new Exception($"строка {no}: '{tableName}' не таблица. Сначала: создать таблицу {tableName}");
-                        string key = Fmt(EvalFull(keyExpr, no));
-                        dict[key] = EvalFull(val, no);
-                        i++; continue;
-                    }
-                }
-                int sp = rest.IndexOfAny(new[] { ' ', '\t' });
-                if (sp < 0) throw new Exception($"строка {no}: надо так -> задать иван 5");
-                name = rest[..sp].Trim();
-                val = rest[(sp + 1)..].Trim();
-                if (val == "") throw new Exception($"строка {no}: нет значения");
-                if (!NameRegex.IsMatch(name)) throw new Exception($"строка {no}: плохое имя '{name}'");
-                Vars[name] = EvalFull(val, no);
-                i++; continue;
-            }
+            else if (IsSet(text)) { ExecSetGeneric(text, no); i++; continue; }
             else if (IsShowMessage(text)) { ExecShowMessage(text, no); i++; continue; }
             else if (IsShowError(text)) { ExecShowError(text, no); i++; continue; }
             else if (IsPrint(text))
@@ -3792,11 +3749,86 @@ class Program
         StartPhysics();
     }
 
+    // Обычное присвоение: задать имя выражение (и задать таб["ключ"] значение).
+    // Сюда же откатываются команды физики, если после служебного слова
+    // (скорость, угол, ...) идёт одно значение, а не полная форма с объектом.
+    static void ExecSetGeneric(string text, int line)
+    {
+        string rest = AfterFirstWord(text).Trim();
+        string name;
+        string val;
+        int brOpen = rest.IndexOf('[');
+        if (brOpen > 0)
+        {
+            bool inQ = false;
+            int brClose = -1;
+            int depth = 0;
+            for (int bi = brOpen; bi < rest.Length; bi++)
+            {
+                if (rest[bi] == '"') { inQ = !inQ; continue; }
+                if (inQ) continue;
+                if (rest[bi] == '[') depth++;
+                else if (rest[bi] == ']')
+                {
+                    depth--;
+                    if (depth == 0) { brClose = bi; break; }
+                }
+            }
+            if (brClose > brOpen)
+            {
+                name = rest[..(brClose + 1)].Trim();
+                val = rest[(brClose + 1)..].Trim();
+                string tableName = name[..brOpen].Trim();
+                string keyExpr = name[(brOpen + 1)..^1].Trim();
+                if (!TryResolveVar(tableName, out var tv) || tv is not Dictionary<string, object> dict)
+                    throw new Exception($"строка {line}: '{tableName}' не таблица. Сначала: создать таблицу {tableName}");
+                string key = Fmt(EvalFull(keyExpr, line));
+                dict[key] = EvalFull(val, line);
+                return;
+            }
+        }
+        int sp = rest.IndexOfAny(new[] { ' ', '\t' });
+        if (sp < 0) throw new Exception($"строка {line}: надо так -> задать иван 5");
+        name = rest[..sp].Trim();
+        val = rest[(sp + 1)..].Trim();
+        if (val == "") throw new Exception($"строка {line}: нет значения");
+        if (!NameRegex.IsMatch(name)) throw new Exception($"строка {line}: плохое имя '{name}'");
+        Vars[name] = EvalFull(val, line);
+    }
+
+    static bool IsBoolWord(string s)
+    {
+        return s.ToLowerInvariant() is "истина" or "истинно" or "правда" or "true"
+            or "ложь" or "ложно" or "неправда" or "false";
+    }
+
+    // Похоже ли слово на имя объекта (а не на значение): тогда это физика.
+    // Число, текст в кавычках, истина/ложь или существующая переменная —
+    // это значение для обычной переменной.
+    static bool IsPhysicsTarget(string s)
+    {
+        if (!NameRegex.IsMatch(s)) return false;
+        if (IsBoolWord(s)) return false;
+        if (TryResolveVar(s, out _)) return false;
+        return true;
+    }
+
     static void ExecSetVelocity(string text, int line)
     {
         string rest = Regex.Replace(text.Trim(), @"^зада(ть|й)\s+скорость\b", "", RegexOptions.IgnoreCase).Trim();
         var parts = SplitArgsPreservingQuotes(rest);
-        if (parts.Count < 3) throw new Exception($"строка {line}: надо так -> задать скорость мяч 10 -5");
+        if (parts.Count < 3 || !IsPhysicsTarget(parts[0]))
+        {
+            // Первым идёт значение, а не имя объекта (или аргументов мало) —
+            // пробуем как обычную переменную: задать скорость 5
+            Exception? assignErr = null;
+            try { ExecSetGeneric("задать скорость " + rest, line); return; }
+            catch (Exception ex) { assignErr = ex; }
+            // Присвоение не вышло, но начало похоже на имя объекта —
+            // ниже физика даст точную ошибку (или сработает).
+            if (parts.Count == 0 || !NameRegex.IsMatch(parts[0]) || IsBoolWord(parts[0]))
+                throw assignErr!;
+        }
         string name = parts[0];
         double vx = ToNum(EvalArith(parts[1], line), line);
         double vy = ToNum(EvalArith(parts[2], line), line);
@@ -3872,7 +3904,16 @@ class Program
     {
         string rest = Regex.Replace(text.Trim(), @"^зада(ть|й)\s+ускорение\b", "", RegexOptions.IgnoreCase).Trim();
         var parts = SplitArgsPreservingQuotes(rest);
-        if (parts.Count < 3) throw new Exception($"строка {line}: надо так -> задать ускорение мяч 0 9.8");
+        if (parts.Count < 3 || !IsPhysicsTarget(parts[0]))
+        {
+            // Первым идёт значение, а не имя объекта (или аргументов мало) —
+            // пробуем как обычную переменную: задать ускорение 5
+            Exception? assignErr = null;
+            try { ExecSetGeneric("задать ускорение " + rest, line); return; }
+            catch (Exception ex) { assignErr = ex; }
+            if (parts.Count == 0 || !NameRegex.IsMatch(parts[0]) || IsBoolWord(parts[0]))
+                throw assignErr!;
+        }
         string name = parts[0];
         double ax = ToNum(EvalArith(parts[1], line), line);
         double ay = ToNum(EvalArith(parts[2], line), line);
@@ -3968,7 +4009,16 @@ class Program
     {
         string rest = Regex.Replace(text.Trim(), @"^зада(ть|й)\s+угол\b", "", RegexOptions.IgnoreCase).Trim();
         var parts = SplitArgsPreservingQuotes(rest);
-        if (parts.Count < 2) throw new Exception($"строка {line}: надо так -> задать угол мяч 90");
+        if (parts.Count < 2 || !IsPhysicsTarget(parts[0]))
+        {
+            // Первым идёт значение, а не имя объекта (или аргументов мало) —
+            // пробуем как обычную переменную: задать угол 90
+            Exception? assignErr = null;
+            try { ExecSetGeneric("задать угол " + rest, line); return; }
+            catch (Exception ex) { assignErr = ex; }
+            if (parts.Count == 0 || !NameRegex.IsMatch(parts[0]) || IsBoolWord(parts[0]))
+                throw assignErr!;
+        }
         string name = parts[0];
         double deg = ToNum(EvalArith(parts[1], line), line);
         EnsureGameWindow();
@@ -4125,7 +4175,16 @@ class Program
     {
         string rest = Regex.Replace(text.Trim(), @"^зада(ть|й)\s+масс[ую]\b", "", RegexOptions.IgnoreCase).Trim();
         var parts = SplitArgsPreservingQuotes(rest);
-        if (parts.Count < 2) throw new Exception($"строка {line}: надо так -> задать массу мяч 2");
+        if (parts.Count < 2 || !IsPhysicsTarget(parts[0]))
+        {
+            // Первым идёт значение, а не имя объекта (или аргументов мало) —
+            // пробуем как обычную переменную: задать массу 2
+            Exception? assignErr = null;
+            try { ExecSetGeneric("задать массу " + rest, line); return; }
+            catch (Exception ex) { assignErr = ex; }
+            if (parts.Count == 0 || !NameRegex.IsMatch(parts[0]) || IsBoolWord(parts[0]))
+                throw assignErr!;
+        }
         string name = parts[0];
         double mass = ToNum(EvalArith(parts[1], line), line);
         if (mass <= 0) mass = 0.1;
@@ -4144,7 +4203,16 @@ class Program
     {
         string rest = Regex.Replace(text.Trim(), @"^зада(ть|й)\s+демпфирование\b", "", RegexOptions.IgnoreCase).Trim();
         var parts = SplitArgsPreservingQuotes(rest);
-        if (parts.Count < 2) throw new Exception($"строка {line}: надо так -> задать демпфирование мяч 0.1");
+        if (parts.Count < 2 || !IsPhysicsTarget(parts[0]))
+        {
+            // Первым идёт значение, а не имя объекта (или аргументов мало) —
+            // пробуем как обычную переменную: задать демпфирование 1
+            Exception? assignErr = null;
+            try { ExecSetGeneric("задать демпфирование " + rest, line); return; }
+            catch (Exception ex) { assignErr = ex; }
+            if (parts.Count == 0 || !NameRegex.IsMatch(parts[0]) || IsBoolWord(parts[0]))
+                throw assignErr!;
+        }
         string name = parts[0];
         double damping = ToNum(EvalArith(parts[1], line), line);
         EnsureGameWindow();
@@ -4162,7 +4230,16 @@ class Program
     {
         string rest = Regex.Replace(text.Trim(), @"^зада(ть|й)\s+упругость\b", "", RegexOptions.IgnoreCase).Trim();
         var parts = SplitArgsPreservingQuotes(rest);
-        if (parts.Count < 2) throw new Exception($"строка {line}: надо так -> задать упругость мяч 0.8");
+        if (parts.Count < 2 || !IsPhysicsTarget(parts[0]))
+        {
+            // Первым идёт значение, а не имя объекта (или аргументов мало) —
+            // пробуем как обычную переменную: задать упругость 1
+            Exception? assignErr = null;
+            try { ExecSetGeneric("задать упругость " + rest, line); return; }
+            catch (Exception ex) { assignErr = ex; }
+            if (parts.Count == 0 || !NameRegex.IsMatch(parts[0]) || IsBoolWord(parts[0]))
+                throw assignErr!;
+        }
         string name = parts[0];
         double elast = ToNum(EvalArith(parts[1], line), line);
         EnsureGameWindow();
@@ -4180,7 +4257,16 @@ class Program
     {
         string rest = Regex.Replace(text.Trim(), @"^зада(ть|й)\s+трение\b", "", RegexOptions.IgnoreCase).Trim();
         var parts = SplitArgsPreservingQuotes(rest);
-        if (parts.Count < 2) throw new Exception($"строка {line}: надо так -> задать трение мяч 0.05");
+        if (parts.Count < 2 || !IsPhysicsTarget(parts[0]))
+        {
+            // Первым идёт значение, а не имя объекта (или аргументов мало) —
+            // пробуем как обычную переменную: задать трение 1
+            Exception? assignErr = null;
+            try { ExecSetGeneric("задать трение " + rest, line); return; }
+            catch (Exception ex) { assignErr = ex; }
+            if (parts.Count == 0 || !NameRegex.IsMatch(parts[0]) || IsBoolWord(parts[0]))
+                throw assignErr!;
+        }
         string name = parts[0];
         double f = ToNum(EvalArith(parts[1], line), line);
         EnsureGameWindow();
@@ -4589,7 +4675,16 @@ class Program
     {
         string rest = Regex.Replace(text.Trim(), @"^зада(ть|й)\s+направление\b", "", RegexOptions.IgnoreCase).Trim();
         var parts = SplitArgsPreservingQuotes(rest);
-        if (parts.Count < 2) throw new Exception($"строка {line}: надо так -> задать направление мяч 45");
+        if (parts.Count < 2 || !IsPhysicsTarget(parts[0]))
+        {
+            // Первым идёт значение, а не имя объекта (или аргументов мало) —
+            // пробуем как обычную переменную: задать направление 45
+            Exception? assignErr = null;
+            try { ExecSetGeneric("задать направление " + rest, line); return; }
+            catch (Exception ex) { assignErr = ex; }
+            if (parts.Count == 0 || !NameRegex.IsMatch(parts[0]) || IsBoolWord(parts[0]))
+                throw assignErr!;
+        }
         string name = parts[0];
         double deg = ToNum(EvalArith(parts[1], line), line);
         EnsureGameWindow();
