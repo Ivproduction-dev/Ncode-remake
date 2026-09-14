@@ -3749,9 +3749,6 @@ class Program
         StartPhysics();
     }
 
-    // Обычное присвоение: задать имя выражение (и задать таб["ключ"] значение).
-    // Сюда же откатываются команды физики, если после служебного слова
-    // (скорость, угол, ...) идёт одно значение, а не полная форма с объектом.
     static void ExecSetGeneric(string text, int line)
     {
         string rest = AfterFirstWord(text).Trim();
@@ -3802,9 +3799,6 @@ class Program
             or "ложь" or "ложно" or "неправда" or "false";
     }
 
-    // Похоже ли слово на имя объекта (а не на значение): тогда это физика.
-    // Число, текст в кавычках, истина/ложь или существующая переменная —
-    // это значение для обычной переменной.
     static bool IsPhysicsTarget(string s)
     {
         if (!NameRegex.IsMatch(s)) return false;
@@ -3819,13 +3813,9 @@ class Program
         var parts = SplitArgsPreservingQuotes(rest);
         if (parts.Count < 3 || !IsPhysicsTarget(parts[0]))
         {
-            // Первым идёт значение, а не имя объекта (или аргументов мало) —
-            // пробуем как обычную переменную: задать скорость 5
             Exception? assignErr = null;
             try { ExecSetGeneric("задать скорость " + rest, line); return; }
             catch (Exception ex) { assignErr = ex; }
-            // Присвоение не вышло, но начало похоже на имя объекта —
-            // ниже физика даст точную ошибку (или сработает).
             if (parts.Count == 0 || !NameRegex.IsMatch(parts[0]) || IsBoolWord(parts[0]))
                 throw assignErr!;
         }
@@ -3906,8 +3896,6 @@ class Program
         var parts = SplitArgsPreservingQuotes(rest);
         if (parts.Count < 3 || !IsPhysicsTarget(parts[0]))
         {
-            // Первым идёт значение, а не имя объекта (или аргументов мало) —
-            // пробуем как обычную переменную: задать ускорение 5
             Exception? assignErr = null;
             try { ExecSetGeneric("задать ускорение " + rest, line); return; }
             catch (Exception ex) { assignErr = ex; }
@@ -4011,8 +3999,6 @@ class Program
         var parts = SplitArgsPreservingQuotes(rest);
         if (parts.Count < 2 || !IsPhysicsTarget(parts[0]))
         {
-            // Первым идёт значение, а не имя объекта (или аргументов мало) —
-            // пробуем как обычную переменную: задать угол 90
             Exception? assignErr = null;
             try { ExecSetGeneric("задать угол " + rest, line); return; }
             catch (Exception ex) { assignErr = ex; }
@@ -4177,8 +4163,6 @@ class Program
         var parts = SplitArgsPreservingQuotes(rest);
         if (parts.Count < 2 || !IsPhysicsTarget(parts[0]))
         {
-            // Первым идёт значение, а не имя объекта (или аргументов мало) —
-            // пробуем как обычную переменную: задать массу 2
             Exception? assignErr = null;
             try { ExecSetGeneric("задать массу " + rest, line); return; }
             catch (Exception ex) { assignErr = ex; }
@@ -4205,8 +4189,6 @@ class Program
         var parts = SplitArgsPreservingQuotes(rest);
         if (parts.Count < 2 || !IsPhysicsTarget(parts[0]))
         {
-            // Первым идёт значение, а не имя объекта (или аргументов мало) —
-            // пробуем как обычную переменную: задать демпфирование 1
             Exception? assignErr = null;
             try { ExecSetGeneric("задать демпфирование " + rest, line); return; }
             catch (Exception ex) { assignErr = ex; }
@@ -4232,8 +4214,6 @@ class Program
         var parts = SplitArgsPreservingQuotes(rest);
         if (parts.Count < 2 || !IsPhysicsTarget(parts[0]))
         {
-            // Первым идёт значение, а не имя объекта (или аргументов мало) —
-            // пробуем как обычную переменную: задать упругость 1
             Exception? assignErr = null;
             try { ExecSetGeneric("задать упругость " + rest, line); return; }
             catch (Exception ex) { assignErr = ex; }
@@ -4259,8 +4239,6 @@ class Program
         var parts = SplitArgsPreservingQuotes(rest);
         if (parts.Count < 2 || !IsPhysicsTarget(parts[0]))
         {
-            // Первым идёт значение, а не имя объекта (или аргументов мало) —
-            // пробуем как обычную переменную: задать трение 1
             Exception? assignErr = null;
             try { ExecSetGeneric("задать трение " + rest, line); return; }
             catch (Exception ex) { assignErr = ex; }
@@ -4677,8 +4655,6 @@ class Program
         var parts = SplitArgsPreservingQuotes(rest);
         if (parts.Count < 2 || !IsPhysicsTarget(parts[0]))
         {
-            // Первым идёт значение, а не имя объекта (или аргументов мало) —
-            // пробуем как обычную переменную: задать направление 45
             Exception? assignErr = null;
             try { ExecSetGeneric("задать направление " + rest, line); return; }
             catch (Exception ex) { assignErr = ex; }
