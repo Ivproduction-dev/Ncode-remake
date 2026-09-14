@@ -1,6 +1,6 @@
 # Ncode
 
-Русскоязычный язык для игр и программ. Пиши по-русски — Windows (WinForms окно + звук) и Android (MediaPlayer + Toast).
+Русскоязычный язык для игр и программ. Пиши по-русски — рантайм Windows (WinForms окно + звук) и Android (MediaPlayer + Toast), редактор — только Windows.
 
 ```ncode
 задать имя "мир"
@@ -15,10 +15,10 @@
 
 ## Быстрый старт
 
-1. Установи [.NET 8 SDK](https://dotnet.microsoft.com/download) (+ `dotnet workload install android` для Android).
-2. Собери: `dotnet build Ncode.sln` (Windows + headless) или `dotnet build -p:DefineConstants=ANDROID` для проверки Android-веток
-3. Запусти редактор: `editor.bat` (или `dotnet Ncode.Editor/bin/Debug/net8.0/Ncode.Editor.dll`)
-4. Или запусти файл напрямую: `ncode.bat игра.ncode` / `dotnet Ncode/bin/Debug/net8.0-windows/Ncode.dll игра.ncode` (Windows с окном) / `dotnet Ncode/bin/Debug/net8.0/Ncode.dll игра.ncode` (headless для тестов)
+1. Установи [.NET 8 SDK](https://dotnet.microsoft.com/download) (+ `dotnet workload install android` только для Android-рантайма).
+2. Собери рантайм: `dotnet build Ncode.sln` (Windows + headless) — редактор на Android не портируется, только `Ncode` + `Ncode.Core`
+3. Запусти редактор (только Windows): `editor.bat` (или `dotnet Ncode.Editor/bin/Debug/net8.0/Ncode.Editor.dll`)
+4. Или запусти файл напрямую (только Windows): `ncode.bat игра.ncode` / `dotnet Ncode/bin/Debug/net8.0-windows/Ncode.dll игра.ncode` (с окном) / `dotnet Ncode/bin/Debug/net8.0/Ncode.dll игра.ncode` (headless для тестов)
 
 ## Документация
 
