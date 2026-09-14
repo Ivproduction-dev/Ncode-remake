@@ -269,6 +269,24 @@ public partial class ExportApkDialog : Window
             string lastStderr = "";
             await Task.Run(async () =>
             {
+                var stdoutSb = new StringBuilder();
+                var stderrSb = new StringBuilder();
+                // Предварительная проверка workload до долгой сборки
+                try
+                {
+                    var wpsi = new ProcessStartInfo("dotnet", "workload list") { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+                    using var wp = Process.Start(wpsi);
+                    if (wp != null)
+                    {
+                        string wout = await wp.StandardOutput.ReadToEndAsync();
+                        await wp.WaitForExitAsync();
+                        if (wout.IndexOf("android", StringComparison.OrdinalIgnoreCase) < 0)
+                        {
+                            lock (stderrSb) stderrSb.AppendLine("Android workload не установлен. Запустите install.bat от имени администратора или выполните: dotnet workload install android");
+                        }
+                    }
+                }
+                catch { }
                 var args = new StringBuilder();
                 args.Append($"publish \"{androidCsproj}\" -c Release -f net8.0-android -p:GameBundleZip=\"{tempZip}\" -p:ApplicationId={package} -p:ApplicationVersion={versionCode} -p:ApplicationDisplayVersion={version} -p:ApplicationTitle=\"{title}\" -o \"{tempPublish}\" --nologo");
                 if (useSigning) args.Append(signingArgs);
@@ -279,8 +297,6 @@ public partial class ExportApkDialog : Window
                     StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8
                 };
                 using var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
-                var stdoutSb = new StringBuilder();
-                var stderrSb = new StringBuilder();
                 proc.OutputDataReceived += (_, e) => { if (e.Data != null) { lock (stdoutSb) stdoutSb.AppendLine(e.Data); Dispatcher.UIThread.Post(() => { StatusText.Text = e.Data!; }); } };
                 proc.ErrorDataReceived += (_, e) => { if (e.Data != null) { lock (stderrSb) stderrSb.AppendLine(e.Data); Dispatcher.UIThread.Post(() => { StatusText.Text = e.Data!; }); } };
                 try
@@ -321,7 +337,7 @@ public partial class ExportApkDialog : Window
 
             if (!success)
             {
-                ShowError("Сборка .apk не удалась. Нужен Android workload: dotnet workload install android + Android SDK. См. вывод выше.");
+                ShowError("Сборка .apk не удалась. Запустите install.bat от имени администратора — он поставит Android workload, SDK и JDK 17.\nИли вручную: dotnet workload install android\nСм. вывод выше.");
                 BuildBtn.IsEnabled = true; CancelBtn.IsEnabled = true; BuildProgress.IsVisible = false;
                 return;
             }
