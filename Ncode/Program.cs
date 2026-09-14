@@ -322,7 +322,7 @@ class GameObject
     static bool IsDraw(string t) => StartsWithWord(t, "нарисовать", "нарисуй");
     static bool IsCreateObject(string t) => Regex.IsMatch(t.Trim(), @"^созда(ть|й)\s+(объект|обьект)\b", RegexOptions.IgnoreCase);
     static bool IsAssignImage(string t) => Regex.IsMatch(t.Trim(), @"^присво(ить|й)\s+образ\b", RegexOptions.IgnoreCase);
-    static bool IsAssignProp(string t) => Regex.IsMatch(t.Trim(), @"^присво(ить|й)\s+свойство\b", RegexOptions.IgnoreCase);
+    static bool IsAssignProp(string t) => Regex.IsMatch(t.Trim(), @"^(присво(ить|й)|зада(ть|й))\s+свойство\b", RegexOptions.IgnoreCase);
     static bool IsPlaySound(string t) =>
         Regex.IsMatch(t.Trim(), @"^(воспроизвести|воспроизведи|играть|играй|сыграть|сыграй)(\s+звук)?\b", RegexOptions.IgnoreCase);
     static bool IsStopSound(string t) => Regex.IsMatch(t.Trim(), @"^(остановить|останови|стоп)\s+звук\b", RegexOptions.IgnoreCase);
@@ -1725,7 +1725,7 @@ class GameObject
 
     static void ExecAssignProp(string text, int line)
     {
-        string rest = Regex.Replace(text.Trim(), @"^присво(ить|й)\s+свойство\b", "", RegexOptions.IgnoreCase).Trim();
+        string rest = Regex.Replace(text.Trim(), @"^(присво(ить|й)|зада(ть|й))\s+свойство\b", "", RegexOptions.IgnoreCase).Trim();
         var parts = SplitArgsPreservingQuotes(rest);
         if (parts.Count < 3) throw new Exception($"строка {line}: надо так -> присвоить свойство размер 60 какашка");
 
@@ -1788,6 +1788,13 @@ class GameObject
             else if (p0 == "прозрачность" || p0 == "альфа" || p0 == "alpha")
             {
                 obj.Alpha = ToNum(EvalFull(parts[1], line), line);
+            }
+            else if (p0 == "образ" || p0 == "спрайт" || p0 == "sprite" || p0 == "картинка")
+            {
+                string sprite = CleanStr(EvalFull(parts[1], line));
+                obj.SpritePath = sprite;
+                obj.Visible = true;
+                TryLoadSpriteImage(obj);
             }
             else
             {
