@@ -4,11 +4,11 @@
 // Licensed under the GNU Affero General Public License v3.0 or later.
 // See LICENSE in the repository root.
 
-using System.Drawing;
 using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
-#if !ANDROID
+#if WINDOWS
+using System.Drawing;
 using System.Windows.Forms;
 #endif
 using Ncode.Audio;
@@ -27,11 +27,16 @@ class Program
         GameHostService.Current = new AndroidGameHost();
         DialogService.Current = new AndroidDialogService();
         ClipboardService.Current = new AndroidClipboard();
-#else
+#elif WINDOWS
         AudioService.Current = new WindowsAudioPlayer();
         GameHostService.Current = new WindowsFormsGameHost();
         DialogService.Current = new WindowsDialogService();
         ClipboardService.Current = new WindowsClipboard();
+#else
+        AudioService.Current = new NullAudioPlayer();
+        GameHostService.Current = new NullGameHost();
+        DialogService.Current = new NullDialogService();
+        ClipboardService.Current = new NullClipboardService();
 #endif
         try { Http.DefaultRequestHeaders.UserAgent.ParseAdd("Ncode/1.0"); } catch { }
         Http.Timeout = TimeSpan.FromSeconds(15);
@@ -83,11 +88,15 @@ class Program
 
     enum ObjectMotion { None, Static, Dynamic }
 
-    class GameObject
+class GameObject
     {
         public string Name = "";
         public string SpritePath = "";
+#if WINDOWS
         public Image? LoadedImage = null;
+#else
+        public object? LoadedImage = null;
+#endif
         public double X = 0;
         public double Y = 0;
         public double Scale = 100;
@@ -128,8 +137,13 @@ class Program
         public (double X, double Y, double Width, double Height) GetBounds()
         {
             double scale = (Scale <= 0 ? 100.0 : Scale) / 100.0;
-            double w = LoadedImage != null ? LoadedImage.Width * scale : Math.Max(24, 60 * scale);
-            double h = LoadedImage != null ? LoadedImage.Height * scale : Math.Max(24, 60 * scale);
+#if WINDOWS
+            double w = LoadedImage is Image img ? img.Width * scale : Math.Max(24, 60 * scale);
+            double h = LoadedImage is Image img2 ? img2.Height * scale : Math.Max(24, 60 * scale);
+#else
+            double w = Math.Max(24, 60 * scale);
+            double h = Math.Max(24, 60 * scale);
+#endif
             if (Props.TryGetValue("ширина", out var pw) || Props.TryGetValue("width", out pw))
             {
                 try { w = Convert.ToDouble(pw, System.Globalization.CultureInfo.InvariantCulture); } catch { }
@@ -1546,6 +1560,7 @@ class Program
 
     static void TryLoadSpriteImage(GameObject obj)
     {
+#if WINDOWS
         if (string.IsNullOrEmpty(obj.SpritePath)) return;
         try
         {
@@ -1568,6 +1583,7 @@ class Program
             }
         }
         catch { }
+#endif
     }
 
     static List<string> SplitArgsPreservingQuotes(string text)
@@ -1822,6 +1838,7 @@ class Program
         };
     }
 
+#if WINDOWS
     static List<string> KeyToNames(Keys k)
     {
         var list = new List<string>();
@@ -1850,6 +1867,7 @@ class Program
         }
         return list;
     }
+#endif
 
     static string? EngToRuKey(string eng) => eng switch
     {
@@ -4828,7 +4846,7 @@ class Program
             catch (Exception ex)
             {
                 Console.WriteLine("Ошибка: " + ex.Message);
-#if !ANDROID
+#if WINDOWS
                 try
                 {
                     MessageBox.Show("Ошибка выполнения игры: " + ex.Message, ActiveConfig?.Title ?? "Ncode", MessageBoxButtons.OK, MessageBoxIcon.Error);

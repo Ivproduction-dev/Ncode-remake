@@ -6,7 +6,7 @@
 
 using System;
 using System.Collections.Generic;
-#if !ANDROID
+#if WINDOWS
 using System.Drawing;
 using System.Windows.Forms;
 #endif
@@ -18,7 +18,7 @@ namespace Ncode.Rendering;
 
 public sealed class WindowsFormsGameHost : IGameHost
 {
-#if !ANDROID
+#if WINDOWS
     private Form? _gameForm;
     private Thread? _uiThread;
     private readonly object _lock = new();

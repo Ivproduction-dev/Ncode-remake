@@ -6,11 +6,15 @@
     <ApplicationIcon Condition="'$(AppIcon)' != '' and Exists('$(AppIcon)')">$(AppIcon)</ApplicationIcon>
     <TargetName Condition="'$(GameTargetName)' != ''">$(GameTargetName)</TargetName>
     <AssemblyName Condition="'$(GameTargetName)' != ''">$(GameTargetName)</AssemblyName>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFrameworks>net8.0;net8.0-windows</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <UseWindowsForms>true</UseWindowsForms>
+    <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(GameBundleZip)' != '' and Exists('$(GameBundleZip)')">
     <EmbeddedResource Include="$(GameBundleZip)">

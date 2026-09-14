@@ -343,7 +343,12 @@ public partial class ExportExeDialog : Window
         {
             try
             {
-                Process.Start(new ProcessStartInfo("explorer.exe", _createdOutputDir) { UseShellExecute = true });
+                if (OperatingSystem.IsWindows())
+                    Process.Start(new ProcessStartInfo("explorer.exe", _createdOutputDir) { UseShellExecute = true });
+                else if (OperatingSystem.IsMacOS())
+                    Process.Start(new ProcessStartInfo("open", $"\"{_createdOutputDir}\"") { UseShellExecute = true });
+                else
+                    Process.Start(new ProcessStartInfo("xdg-open", $"\"{_createdOutputDir}\"") { UseShellExecute = true });
             }
             catch { }
         }

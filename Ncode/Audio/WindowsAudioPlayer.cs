@@ -15,7 +15,7 @@ namespace Ncode.Audio;
 
 public sealed class WindowsAudioPlayer : IAudioPlayer
 {
-#if !ANDROID
+#if WINDOWS
     private readonly object _lock = new();
     private readonly List<(string Key, dynamic Player)> _activePlayers = new();
 

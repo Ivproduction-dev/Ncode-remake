@@ -6,7 +6,7 @@
 
 using System;
 using System.Threading;
-#if !ANDROID
+#if WINDOWS
 using System.Windows.Forms;
 #endif
 using Ncode.Core.Abstractions;
@@ -15,7 +15,7 @@ namespace Ncode.Platform;
 
 public sealed class WindowsClipboard : IClipboardService
 {
-#if !ANDROID
+#if WINDOWS
     public void Copy(string text)
     {
         if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)

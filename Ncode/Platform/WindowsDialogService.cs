@@ -4,7 +4,7 @@
 // Licensed under the GNU Affero General Public License v3.0 or later.
 // See LICENSE in the repository root.
 
-#if !ANDROID
+#if WINDOWS
 using System.Windows.Forms;
 #endif
 using Ncode.Core.Abstractions;
@@ -13,7 +13,7 @@ namespace Ncode.Platform;
 
 public sealed class WindowsDialogService : IDialogService
 {
-#if !ANDROID
+#if WINDOWS
     public void ShowMessage(string text)
     {
         MessageBox.Show(text, "Ncode", MessageBoxButtons.OK, MessageBoxIcon.Information);

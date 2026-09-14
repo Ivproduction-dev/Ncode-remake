@@ -442,13 +442,27 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (File.Exists(path))
+            if (OperatingSystem.IsWindows())
             {
-                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
+                if (File.Exists(path))
+                    Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
+                else if (Directory.Exists(path))
+                    Process.Start(new ProcessStartInfo("explorer.exe", $"\"{path}\"") { UseShellExecute = true });
             }
-            else if (Directory.Exists(path))
+            else if (OperatingSystem.IsMacOS())
             {
-                Process.Start(new ProcessStartInfo("explorer.exe", $"\"{path}\"") { UseShellExecute = true });
+                if (File.Exists(path))
+                    Process.Start(new ProcessStartInfo("open", $"-R \"{path}\"") { UseShellExecute = true });
+                else if (Directory.Exists(path))
+                    Process.Start(new ProcessStartInfo("open", $"\"{path}\"") { UseShellExecute = true });
+            }
+            else
+            {
+                string? target = File.Exists(path) ? Path.GetDirectoryName(path) : path;
+                if (!string.IsNullOrEmpty(target) && Directory.Exists(target))
+                    Process.Start(new ProcessStartInfo("xdg-open", $"\"{target}\"") { UseShellExecute = true });
+                else if (!string.IsNullOrEmpty(path))
+                    Process.Start(new ProcessStartInfo("xdg-open", $"\"{path}\"") { UseShellExecute = true });
             }
         }
         catch { }
@@ -825,7 +839,7 @@ public partial class MainWindow : Window
         for (int i = 0; i < 6 && dir != null; i++)
         {
             string[] configs = ["Debug", "Release"];
-            string[] tfms = ["net8.0-windows", "net8.0"];
+            string[] tfms = OperatingSystem.IsWindows() ? ["net8.0-windows", "net8.0"] : ["net8.0", "net8.0-windows"];
             foreach (var cfg in configs)
             {
                 foreach (var tfm in tfms)

@@ -166,7 +166,12 @@ public partial class WelcomeWindow : Window
         {
             try
             {
-                Process.Start(new ProcessStartInfo("explorer.exe", project.Path) { UseShellExecute = true });
+                if (OperatingSystem.IsWindows())
+                    Process.Start(new ProcessStartInfo("explorer.exe", project.Path) { UseShellExecute = true });
+                else if (OperatingSystem.IsMacOS())
+                    Process.Start(new ProcessStartInfo("open", $"\"{project.Path}\"") { UseShellExecute = true });
+                else
+                    Process.Start(new ProcessStartInfo("xdg-open", $"\"{project.Path}\"") { UseShellExecute = true });
             }
             catch { }
         };
