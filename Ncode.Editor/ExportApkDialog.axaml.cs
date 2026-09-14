@@ -225,6 +225,28 @@ public partial class ExportApkDialog : Window
             SetStatus("Шаг 1/2 — компиляция проекта...", false);
             await Task.Delay(400);
 
+            // Быстрая проверка окружения до долгой сборки — не висеть
+            SetStatus("Проверка Android SDK...", false);
+            bool workloadOk = await Task.Run(() =>
+            {
+                try
+                {
+                    var wpsi = new ProcessStartInfo("dotnet", "workload list") { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+                    using var wp = Process.Start(wpsi);
+                    if (wp == null) return false;
+                    string wout = wp.StandardOutput.ReadToEnd();
+                    wp.WaitForExit(10000);
+                    return wout.IndexOf("android", StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+                catch { return false; }
+            });
+            if (!workloadOk)
+            {
+                ShowError("Android workload не установлен. Выполните: dotnet workload install android\nЗатем установите Android SDK (Android Studio или командные tools) и JDK 17.");
+                BuildBtn.IsEnabled = true; CancelBtn.IsEnabled = true; BuildProgress.IsVisible = false;
+                return;
+            }
+
             if (!string.IsNullOrEmpty(iconPath) && File.Exists(iconPath))
             {
                 try
@@ -242,7 +264,10 @@ public partial class ExportApkDialog : Window
             }
 
             SetStatus("Шаг 2/2 — сборка .apk...", false);
-            bool success = await Task.Run(() =>
+            bool success = false;
+            string lastStdout = "";
+            string lastStderr = "";
+            await Task.Run(async () =>
             {
                 var args = new StringBuilder();
                 args.Append($"publish \"{androidCsproj}\" -c Release -f net8.0-android -p:GameBundleZip=\"{tempZip}\" -p:ApplicationId={package} -p:ApplicationVersion={versionCode} -p:ApplicationDisplayVersion={version} -p:ApplicationTitle=\"{title}\" -o \"{tempPublish}\" --nologo");
@@ -253,18 +278,46 @@ public partial class ExportApkDialog : Window
                     RedirectStandardOutput = true, RedirectStandardError = true,
                     StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8
                 };
-                using var proc = Process.Start(psi);
-                if (proc == null) return false;
-                string stdout = proc.StandardOutput.ReadToEnd();
-                string stderr = proc.StandardError.ReadToEnd();
-                proc.WaitForExit();
+                using var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
+                var stdoutSb = new StringBuilder();
+                var stderrSb = new StringBuilder();
+                proc.OutputDataReceived += (_, e) => { if (e.Data != null) { lock (stdoutSb) stdoutSb.AppendLine(e.Data); Dispatcher.UIThread.Post(() => { StatusText.Text = e.Data!; }); } };
+                proc.ErrorDataReceived += (_, e) => { if (e.Data != null) { lock (stderrSb) stderrSb.AppendLine(e.Data); Dispatcher.UIThread.Post(() => { StatusText.Text = e.Data!; }); } };
+                try
+                {
+                    if (!proc.Start()) { success = false; return; }
+                    proc.BeginOutputReadLine();
+                    proc.BeginErrorReadLine();
+                    var exited = await Task.Run(() => proc.WaitForExit(600000));
+                    if (!exited)
+                    {
+                        try { proc.Kill(true); } catch { }
+                        lock (stderrSb) stderrSb.AppendLine("[ОШИБКА] Сборка зависла и была прервана по таймауту 10 минут. Проверьте Android SDK и workload: dotnet workload install android");
+                        success = false;
+                    }
+                    else
+                    {
+                        success = proc.ExitCode == 0;
+                    }
+                    lock (stdoutSb) lastStdout = stdoutSb.ToString();
+                    lock (stderrSb) lastStderr = stderrSb.ToString();
+                }
+                catch (Exception ex)
+                {
+                    lock (stderrSb) lastStderr = ex.Message;
+                    success = false;
+                }
+            });
+            if (!string.IsNullOrWhiteSpace(lastStdout) || !string.IsNullOrWhiteSpace(lastStderr))
+            {
                 Dispatcher.UIThread.Post(() =>
                 {
-                    if (!string.IsNullOrWhiteSpace(stdout)) StatusText.Text = stdout.Length > 800 ? stdout[^800..] : stdout;
-                    if (proc.ExitCode != 0 && !string.IsNullOrWhiteSpace(stderr)) StatusText.Text += "\n" + (stderr.Length > 800 ? stderr[^800..] : stderr);
+                    string combined = (lastStdout + "\n" + lastStderr).Trim();
+                    if (!string.IsNullOrWhiteSpace(combined))
+                        StatusText.Text = combined.Length > 2000 ? combined[^2000..] : combined;
                 });
-                return proc.ExitCode == 0;
-            });
+                await Task.Delay(100);
+            }
 
             if (!success)
             {

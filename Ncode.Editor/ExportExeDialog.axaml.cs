@@ -234,7 +234,7 @@ public partial class ExportExeDialog : Window
 
             SetStatus("Компиляция автономного исполняемого модуля...", false);
 
-            bool success = await Task.Run(() =>
+            bool success = await Task.Run(async () =>
             {
                 var cmdArgs = new StringBuilder();
                 cmdArgs.Append($"publish \"{ncodeCsproj}\" -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:GameOutputType=WinExe -p:GameTargetName={safeName} -o \"{tempPublish}\" --nologo");
@@ -259,13 +259,21 @@ public partial class ExportExeDialog : Window
                     StandardErrorEncoding = Encoding.UTF8
                 };
 
-                using var proc = Process.Start(psi);
-                if (proc == null) return false;
-                var stdoutTask = proc.StandardOutput.ReadToEndAsync();
-                var stderrTask = proc.StandardError.ReadToEndAsync();
-                proc.WaitForExit();
-                Task.WaitAll(stdoutTask, stderrTask);
-                return proc.ExitCode == 0;
+                using var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
+                var stdoutSb = new StringBuilder();
+                var stderrSb = new StringBuilder();
+                proc.OutputDataReceived += (_, e) => { if (e.Data != null) lock (stdoutSb) stdoutSb.AppendLine(e.Data); };
+                proc.ErrorDataReceived += (_, e) => { if (e.Data != null) lock (stderrSb) stderrSb.AppendLine(e.Data); };
+                try
+                {
+                    if (!proc.Start()) return false;
+                    proc.BeginOutputReadLine();
+                    proc.BeginErrorReadLine();
+                    var exited = await Task.Run(() => proc.WaitForExit(600000));
+                    if (!exited) { try { proc.Kill(true); } catch { } return false; }
+                    return proc.ExitCode == 0;
+                }
+                catch { return false; }
             });
 
             if (!success)
