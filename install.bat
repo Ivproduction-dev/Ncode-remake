@@ -141,17 +141,33 @@ rem Android workload for future - don't fail whole install if missing
 echo.
 echo [2/6] Android workload ^(future^)...
 dotnet workload list 2>nul | findstr /i android >nul 2>&1
-if %errorlevel% neq 0 (
-  echo Installing workload android ^(may need admin, skip if fails^)...
-  dotnet workload install android --skip-manifest-update >nul 2>&1
-  if %errorlevel% neq 0 dotnet workload install android >nul 2>&1
-)
 if %errorlevel% equ 0 (
-  echo [OK] Android workload ready
+  echo [OK] Android workload already installed
+  goto :jdk_check
+)
+echo Workload android not found
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+  echo [!!] Need admin for workload install - skip for now
+  echo      Run install.bat as Administrator later or: dotnet workload install android
+  goto :jdk_check
+)
+echo Installing workload android ^(may take 2-5 min, please wait^)...
+echo ^> dotnet workload install android
+powershell -NoProfile -Command "$p = Start-Process -FilePath 'dotnet' -ArgumentList 'workload install android --skip-manifest-update' -PassThru -NoNewWindow; if (-not $p.WaitForExit(300000)) { try { $p.Kill($true) } catch {}; Write-Host '[TIMEOUT] workload install timed out after 5 min'; exit 1 } else { exit $p.ExitCode }" 
+if %errorlevel% equ 0 (
+  echo [OK] Android workload installed
 ) else (
-  echo [!!] Android workload not installed - skip ^(run later: dotnet workload install android^)
+  echo [!!] Workload install failed or timed out - trying without --skip-manifest-update...
+  powershell -NoProfile -Command "$p = Start-Process -FilePath 'dotnet' -ArgumentList 'workload install android' -PassThru -NoNewWindow; if (-not $p.WaitForExit(300000)) { try { $p.Kill($true) } catch {}; exit 1 } else { exit $p.ExitCode }"
+  if %errorlevel% equ 0 (
+    echo [OK] Android workload installed
+  ) else (
+    echo [!!] Android workload not installed - skip ^(run later: dotnet workload install android^)
+  )
 )
 
+:jdk_check
 rem Check JDK 17 for Android signing
 echo [3/6] Checking JDK 17 for Android signing...
 java -version 2>&1 | findstr "17\." >nul 2>&1
