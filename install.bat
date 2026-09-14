@@ -122,7 +122,7 @@ echo  Building runtime
 echo ========================================
 
 rem Build Windows runtime - required
-echo [1/3] Windows runtime ^(net8.0-windows^)...
+echo [1/5] Windows runtime ^(net8.0-windows^)...
 dotnet build Ncode -c Release -f net8.0-windows --nologo
 if %errorlevel% neq 0 (
   echo [!!] Windows build failed, trying net8.0...
@@ -139,7 +139,7 @@ if %errorlevel% neq 0 (
 
 rem Android workload for future - don't fail whole install if missing
 echo.
-echo [2/3] Android workload ^(future^)...
+echo [2/5] Android workload ^(future^)...
 dotnet workload list 2>nul | findstr /i android >nul 2>&1
 if %errorlevel% neq 0 (
   echo Installing workload android ^(may need admin, skip if fails^)...
@@ -152,8 +152,29 @@ if %errorlevel% equ 0 (
   echo [!!] Android workload not installed - skip ^(run later: dotnet workload install android^)
 )
 
+rem Check JDK 17 for Android signing
+echo [3/5] Checking JDK 17 for Android signing...
+java -version 2>&1 | findstr "17\." >nul 2>&1
+if %errorlevel% neq 0 (
+  where keytool >nul 2>&1
+  if %errorlevel% neq 0 (
+    echo JDK 17 not found, trying to install via winget...
+    where winget >nul 2>&1
+    if %errorlevel% equ 0 (
+      winget install Microsoft.OpenJDK.17 --silent --accept-package-agreements --accept-source-agreements >nul 2>&1
+      if %errorlevel% equ 0 echo [OK] JDK 17 installed
+    )
+    where keytool >nul 2>&1
+    if %errorlevel% neq 0 echo [!!] keytool still not found - install JDK 17 manually: https://learn.microsoft.com/java/openjdk/download
+  ) else (
+    echo [OK] keytool found
+  )
+) else (
+  echo [OK] JDK 17 found
+)
+
 rem Try Android runtime if workload exists - optional
-echo [3/3] Trying Android runtime ^(optional^)...
+echo [4/5] Trying Android runtime ^(optional^)...
 dotnet build Ncode -c Release -f net8.0-android --nologo >nul 2>&1
 if %errorlevel% equ 0 (
   echo [OK] Android runtime built
@@ -163,7 +184,7 @@ if %errorlevel% equ 0 (
 
 rem Release APK signing - generate keystore if missing
 echo.
-echo [4/4] Release APK keystore ^(for signed .apk^)...
+echo [5/5] Release APK keystore ^(for signed .apk/.aab^)...
 set KEYSTORE=%AppData%\Ncode\ncode.keystore
 if not exist "%KEYSTORE%" (
   mkdir "%AppData%\Ncode" >nul 2>&1

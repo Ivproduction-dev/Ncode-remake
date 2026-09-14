@@ -12,7 +12,7 @@ using Ncode.Rendering;
 
 namespace Ncode.Android;
 
-[Activity(Label = "@string/app_name", MainLauncher = true, ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize, ScreenOrientation = ScreenOrientation.Unspecified)]
+[Activity(Label = "@string/app_name", MainLauncher = true, Exported = true, ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize, ScreenOrientation = ScreenOrientation.Unspecified)]
 public class MainActivity : Activity
 {
     private AndroidGameView? _gameView;

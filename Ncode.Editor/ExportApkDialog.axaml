@@ -81,6 +81,13 @@
                     </Grid>
                 </StackPanel>
 
+                <Border Background="#1E1E1C" BorderBrush="#30302E" BorderThickness="1" CornerRadius="4" Padding="12,10">
+                    <StackPanel Spacing="6">
+                        <CheckBox Name="BuildAabCheck" IsChecked="True" Foreground="#FAF9F5" Content="Собрать также .aab для Google Play"/>
+                        <TextBlock Text="APK — для теста на устройстве, AAB — для загрузки в Play Console" FontSize="11" Foreground="#6E6D68"/>
+                    </StackPanel>
+                </Border>
+
                 <Border Name="StatusCard" Background="#192819" BorderBrush="#788F69" BorderThickness="1" CornerRadius="4" Padding="12,10" IsVisible="False">
                     <StackPanel Spacing="6">
                         <ProgressBar Name="BuildProgress" IsIndeterminate="True" Height="4" CornerRadius="2"

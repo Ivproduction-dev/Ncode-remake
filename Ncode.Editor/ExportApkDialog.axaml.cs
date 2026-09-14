@@ -112,6 +112,17 @@ public partial class ExportApkDialog : Window
         if (string.IsNullOrEmpty(outBase)) { ShowError("Укажите папку для сохранения."); return; }
         string version = (VersionBox.Text ?? "").Trim();
         if (string.IsNullOrEmpty(version)) version = "1.0";
+        int versionCode = 1;
+        var vm = Regex.Match(version, @"^(\d+)\.(\d+)(?:\.(\d+))?");
+        if (vm.Success)
+        {
+            int.TryParse(vm.Groups[1].Value, out int maj);
+            int.TryParse(vm.Groups[2].Value, out int min);
+            int.TryParse(vm.Groups[3].Value, out int pat);
+            versionCode = maj * 10000 + min * 100 + pat;
+            if (versionCode < 1) versionCode = 1;
+        }
+        else if (int.TryParse(version, out int v)) versionCode = v;
 
         string? androidCsproj = FindAndroidCsproj();
         if (string.IsNullOrEmpty(androidCsproj) || !File.Exists(androidCsproj)) { ShowError("Не найден Ncode.Android.csproj"); return; }
@@ -210,10 +221,26 @@ public partial class ExportApkDialog : Window
             }
             catch { }
 
+            if (!string.IsNullOrEmpty(iconPath) && File.Exists(iconPath))
+            {
+                try
+                {
+                    string androidProjDir = Path.GetDirectoryName(androidCsproj) ?? "";
+                    foreach (var dpi in new[] { "mipmap-hdpi", "mipmap-mdpi", "mipmap-xhdpi", "mipmap-xxhdpi", "mipmap-xxxhdpi" })
+                    {
+                        string dst = Path.Combine(androidProjDir, "Resources", dpi, "appicon.png");
+                        File.Copy(iconPath, dst, true);
+                        string dstFg = Path.Combine(androidProjDir, "Resources", dpi, "appicon_foreground.png");
+                        if (File.Exists(dstFg)) File.Copy(iconPath, dstFg, true);
+                    }
+                }
+                catch { }
+            }
+
             bool success = await Task.Run(() =>
             {
                 var args = new StringBuilder();
-                args.Append($"publish \"{androidCsproj}\" -c Release -f net8.0-android -p:GameBundleZip=\"{tempZip}\" -p:ApplicationId={package} -p:ApplicationVersion=1 -p:ApplicationDisplayVersion={version} -p:ApplicationTitle=\"{title}\" -o \"{tempPublish}\" --nologo");
+                args.Append($"publish \"{androidCsproj}\" -c Release -f net8.0-android -p:GameBundleZip=\"{tempZip}\" -p:ApplicationId={package} -p:ApplicationVersion={versionCode} -p:ApplicationDisplayVersion={version} -p:ApplicationTitle=\"{title}\" -o \"{tempPublish}\" --nologo");
                 if (useSigning) args.Append(signingArgs);
                 var psi = new ProcessStartInfo("dotnet", args.ToString())
                 {
@@ -249,6 +276,22 @@ public partial class ExportApkDialog : Window
                 {
                     string dest = Path.Combine(gameOutputDir, safeName + ".apk");
                     File.Copy(apk, dest, true);
+                }
+                if (BuildAabCheck.IsChecked == true)
+                {
+                    try
+                    {
+                        var aabArgs = new StringBuilder();
+                        aabArgs.Append($"publish \"{androidCsproj}\" -c Release -f net8.0-android -p:GameBundleZip=\"{tempZip}\" -p:ApplicationId={package} -p:ApplicationVersion={versionCode} -p:ApplicationDisplayVersion={version} -p:ApplicationTitle=\"{title}\" -p:AndroidPackageFormat=aab -o \"{tempPublish}_aab\" --nologo");
+                        if (useSigning) aabArgs.Append(signingArgs);
+                        var aabPsi = new ProcessStartInfo("dotnet", aabArgs.ToString()) { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+                        using var aabProc = Process.Start(aabPsi);
+                        if (aabProc != null) { aabProc.WaitForExit(300000); }
+                        var aab = Directory.GetFiles(tempPublish + "_aab", "*.aab", SearchOption.AllDirectories).FirstOrDefault();
+                        if (aab != null && File.Exists(aab)) File.Copy(aab, Path.Combine(gameOutputDir, safeName + ".aab"), true);
+                        try { Directory.Delete(tempPublish + "_aab", true); } catch { }
+                    }
+                    catch { }
                 }
                 try { if (!string.IsNullOrEmpty(tempPublish)) Directory.Delete(tempPublish, true); } catch { }
                 try { if (!string.IsNullOrEmpty(tempZip) && File.Exists(tempZip)) File.Delete(tempZip); } catch { }
