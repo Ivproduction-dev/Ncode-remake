@@ -6,6 +6,7 @@
         <StackPanel Name="Step1" Spacing="10">
             <TextBlock Text="Имя проекта" FontWeight="SemiBold" Foreground="#CDD6F4"/>
             <TextBox Name="NameBox" PlaceholderText="МояИгра" Background="#11111B" Foreground="#CDD6F4"/>
+            <CheckBox Name="Is2DCheck" Content="2Д проект" Foreground="#CDD6F4"/>
             <TextBlock Name="ErrorText" Foreground="#F38BA8" IsVisible="False"/>
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                 <Button Name="CancelButton" Content="Отмена"/>

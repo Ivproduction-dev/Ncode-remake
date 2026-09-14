@@ -425,7 +425,9 @@ public partial class MainWindow : Window
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         for (int i = 0; i < 6 && dir != null; i++)
         {
-            var cand = Path.Combine(dir.FullName, "Ncode", "bin", "Debug", "net8.0", "Ncode.dll");
+            var cand = Path.Combine(dir.FullName, "Ncode", "bin", "Debug", "net8.0-windows", "Ncode.dll");
+            if (File.Exists(cand)) return cand;
+            cand = Path.Combine(dir.FullName, "Ncode", "bin", "Debug", "net8.0", "Ncode.dll");
             if (File.Exists(cand)) return cand;
             dir = dir.Parent;
         }
