@@ -71,6 +71,42 @@
                     </StackPanel>
                 </Border>
 
+                <Border Background="#1E1E1C" BorderBrush="#30302E" BorderThickness="1" CornerRadius="4" Padding="16,14">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Формат сборки" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
+                        <Border Height="1" Background="#2A2A27"/>
+                        <Grid ColumnDefinitions="*,*">
+                            <Border Name="ApkCard" Grid.Column="0" Background="#262624" BorderBrush="#C96442" BorderThickness="2" CornerRadius="6" Padding="14,12" Margin="0,0,6,0" Cursor="Hand">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text=".APK" FontWeight="Bold" FontSize="15" Foreground="#FAF9F5" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Для теста" FontSize="11" Foreground="#B0AEA5" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Установка напрямую на устройство" FontSize="11" Foreground="#6E6D68" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    <Border Name="ApkCheck" Background="#C96442" CornerRadius="10" Width="20" Height="20" HorizontalAlignment="Center" Margin="0,6,0,0">
+                                        <TextBlock Text="✓" Foreground="#FAF9F5" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                            <Grid Grid.Column="1" Margin="6,0,0,0">
+                                <Border Background="#1E1E1C" BorderBrush="#30302E" BorderThickness="1" CornerRadius="6" Padding="14,12" Opacity="0.45">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text=".AAB" FontWeight="Bold" FontSize="15" Foreground="#5E5D59" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Для Play Store" FontSize="11" Foreground="#5E5D59" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Требуется для публикации в Google Play" FontSize="11" Foreground="#5E5D59" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                        <Border Background="#30302E" CornerRadius="10" Width="20" Height="20" HorizontalAlignment="Center" Margin="0,6,0,0">
+                                            <TextBlock Text="—" Foreground="#5E5D59" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="#141413" Opacity="0.78" CornerRadius="6"/>
+                                <Border Background="#1B1B19" BorderBrush="#B53333" BorderThickness="1" CornerRadius="4" Padding="8,6" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="12,0">
+                                    <TextBlock Text="пока не доступно" FontSize="11" FontWeight="SemiBold" Foreground="#B53333" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                        <TextBlock Text="Выбран: .APK — можно установить напрямую, .AAB скоро для Play Store" FontSize="11" Foreground="#6E6D68"/>
+                    </StackPanel>
+                </Border>
+
                 <StackPanel Spacing="6">
                     <TextBlock Text="Папка для сохранения .apk" FontWeight="SemiBold" FontSize="13" Foreground="#FAF9F5"/>
                     <Grid ColumnDefinitions="*,Auto">
@@ -80,13 +116,6 @@
                         <Button Name="BrowseOutputBtn" Grid.Column="1" Classes="secondary" Content="Выбрать..." Margin="8,0,0,0" VerticalAlignment="Center" Padding="10,5" CornerRadius="4" FontSize="12"/>
                     </Grid>
                 </StackPanel>
-
-                <Border Background="#1E1E1C" BorderBrush="#30302E" BorderThickness="1" CornerRadius="4" Padding="12,10">
-                    <StackPanel Spacing="6">
-                        <CheckBox Name="BuildAabCheck" IsChecked="True" Foreground="#FAF9F5" Content="Собрать также .aab для Google Play"/>
-                        <TextBlock Text="APK — для теста на устройстве, AAB — для загрузки в Play Console" FontSize="11" Foreground="#6E6D68"/>
-                    </StackPanel>
-                </Border>
 
                 <Border Name="StatusCard" Background="#192819" BorderBrush="#788F69" BorderThickness="1" CornerRadius="4" Padding="12,10" IsVisible="False">
                     <StackPanel Spacing="6">

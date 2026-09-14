@@ -199,27 +199,31 @@ public partial class ExportApkDialog : Window
             SetStatus("Сборка .apk (требует Android SDK, может занять минуты)...", false);
 
             string keystorePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Ncode", "ncode.keystore");
-            const string keystorePass = "ncode123";
-            const string keyAlias = "ncode";
+            string keystorePass = "ncode123";
+            string keyAlias = "ncode";
+            string keyPass = "ncode123";
             bool useSigning = false;
             string signingArgs = "";
-            try
+
+            bool needKeystore = !File.Exists(keystorePath);
+            if (needKeystore)
             {
-                if (!File.Exists(keystorePath))
+                var ksDlg = new CreateKeystoreDialog(isForAab: false, defaultDir: Path.GetDirectoryName(keystorePath));
+                await ksDlg.ShowDialog(this);
+                if (string.IsNullOrEmpty(ksDlg.ResultKeystorePath))
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(keystorePath)!);
-                    var ktPsi = new ProcessStartInfo("keytool", $"-genkeypair -keystore \"{keystorePath}\" -alias {keyAlias} -keyalg RSA -keysize 2048 -validity 10000 -storepass {keystorePass} -keypass {keystorePass} -dname \"CN=Ncode,O=Ivproduction,C=RU\"")
-                    { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
-                    using var kt = Process.Start(ktPsi);
-                    if (kt != null) { kt.WaitForExit(15000); try { kt.Kill(true); } catch { } }
+                    ShowError("Keystore не создан — сборка отменена. Без подписи APK не установится как обновление.");
+                    BuildBtn.IsEnabled = true; CancelBtn.IsEnabled = true; BuildProgress.IsVisible = false;
+                    return;
                 }
-                if (File.Exists(keystorePath))
-                {
-                    useSigning = true;
-                    signingArgs = $" -p:AndroidKeyStore=true -p:AndroidSigningKeyStore=\"{keystorePath}\" -p:AndroidSigningKeyAlias={keyAlias} -p:AndroidSigningKeyPass={keystorePass} -p:AndroidSigningStorePass={keystorePass}";
-                }
+                keystorePath = ksDlg.ResultKeystorePath!;
+                keystorePass = ksDlg.ResultStorePass;
+                keyPass = ksDlg.ResultKeyPass;
+                keyAlias = ksDlg.ResultAlias;
             }
-            catch { }
+
+            SetStatus("Шаг 1/2 — компиляция проекта...", false);
+            await Task.Delay(400);
 
             if (!string.IsNullOrEmpty(iconPath) && File.Exists(iconPath))
             {
@@ -237,6 +241,7 @@ public partial class ExportApkDialog : Window
                 catch { }
             }
 
+            SetStatus("Шаг 2/2 — сборка .apk...", false);
             bool success = await Task.Run(() =>
             {
                 var args = new StringBuilder();
@@ -276,22 +281,6 @@ public partial class ExportApkDialog : Window
                 {
                     string dest = Path.Combine(gameOutputDir, safeName + ".apk");
                     File.Copy(apk, dest, true);
-                }
-                if (BuildAabCheck.IsChecked == true)
-                {
-                    try
-                    {
-                        var aabArgs = new StringBuilder();
-                        aabArgs.Append($"publish \"{androidCsproj}\" -c Release -f net8.0-android -p:GameBundleZip=\"{tempZip}\" -p:ApplicationId={package} -p:ApplicationVersion={versionCode} -p:ApplicationDisplayVersion={version} -p:ApplicationTitle=\"{title}\" -p:AndroidPackageFormat=aab -o \"{tempPublish}_aab\" --nologo");
-                        if (useSigning) aabArgs.Append(signingArgs);
-                        var aabPsi = new ProcessStartInfo("dotnet", aabArgs.ToString()) { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
-                        using var aabProc = Process.Start(aabPsi);
-                        if (aabProc != null) { aabProc.WaitForExit(300000); }
-                        var aab = Directory.GetFiles(tempPublish + "_aab", "*.aab", SearchOption.AllDirectories).FirstOrDefault();
-                        if (aab != null && File.Exists(aab)) File.Copy(aab, Path.Combine(gameOutputDir, safeName + ".aab"), true);
-                        try { Directory.Delete(tempPublish + "_aab", true); } catch { }
-                    }
-                    catch { }
                 }
                 try { if (!string.IsNullOrEmpty(tempPublish)) Directory.Delete(tempPublish, true); } catch { }
                 try { if (!string.IsNullOrEmpty(tempZip) && File.Exists(tempZip)) File.Delete(tempZip); } catch { }
