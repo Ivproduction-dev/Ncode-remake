@@ -34,6 +34,7 @@ class Program
         ClipboardService.Current = new WindowsClipboard();
 #endif
         try { Http.DefaultRequestHeaders.UserAgent.ParseAdd("Ncode/1.0"); } catch { }
+        Http.Timeout = TimeSpan.FromSeconds(15);
         GameHostService.Current.OnKeyDown = k => HandleGameKeyDown(k);
         GameHostService.Current.OnPointerDown = (x, y) => HandleGameClick(x, y);
         GameHostService.Current.GetObjectsToRender = () =>
@@ -3154,7 +3155,7 @@ class Program
                     lock (VarsLock) { ExecRange(body, 0, body.Count); }
                 }
             }
-            catch { }
+            catch (Exception ex) { Console.Error.WriteLine("[каждые] " + ex.Message); }
         }) { IsBackground = true }.Start();
         return end + 1;
     }
@@ -3354,7 +3355,7 @@ class Program
                 Vars["обьект_1"] = o1;
                 Vars["обьект_2"] = o2;
             }
-            try { ExecRange(ch.Body, 0, ch.Body.Count); } catch { }
+            try { ExecRange(ch.Body, 0, ch.Body.Count); } catch (Exception ex) { Console.Error.WriteLine("[событие] " + ex.Message); }
         }
     }
 
@@ -3376,7 +3377,7 @@ class Program
                 Vars["объект"] = obj;
                 Vars["обьект"] = obj;
             }
-            try { ExecRange(h.Body, 0, h.Body.Count); } catch { }
+            try { ExecRange(h.Body, 0, h.Body.Count); } catch (Exception ex) { Console.Error.WriteLine("[событие] " + ex.Message); }
         }
     }
 
@@ -3398,7 +3399,7 @@ class Program
                 Vars["объект"] = obj;
                 Vars["обьект"] = obj;
             }
-            try { ExecRange(h.Body, 0, h.Body.Count); } catch { }
+            try { ExecRange(h.Body, 0, h.Body.Count); } catch (Exception ex) { Console.Error.WriteLine("[событие] " + ex.Message); }
         }
     }
 
@@ -4793,7 +4794,7 @@ class Program
                 baseDir = tempGameDir;
                 Environment.CurrentDirectory = tempGameDir;
             }
-            catch { }
+            catch (Exception ex) { Console.Error.WriteLine("[бандл] " + ex.Message); }
         }
 
         string configPath = Path.Combine(baseDir, "game.json");
@@ -4804,7 +4805,7 @@ class Program
                 var json = File.ReadAllText(configPath, Encoding.UTF8);
                 ActiveConfig = System.Text.Json.JsonSerializer.Deserialize<GameConfig>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             }
-            catch { }
+            catch (Exception ex) { Console.Error.WriteLine("[конфиг] " + ex.Message); }
         }
 
         string path;
