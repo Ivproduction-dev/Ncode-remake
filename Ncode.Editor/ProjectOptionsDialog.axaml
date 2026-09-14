@@ -81,6 +81,24 @@
                     </StackPanel>
                 </StackPanel>
 
+                <StackPanel Name="ApkBuildSection" Spacing="8" Margin="0,18,0,0">
+                    <DockPanel>
+                        <TextBlock Text="Сборка для Android" FontFamily="Georgia, serif"
+                                   FontSize="14" FontWeight="Medium" Foreground="#FAF9F5" VerticalAlignment="Center"/>
+                        <TextBlock Text=".apk" FontSize="11" Foreground="#5E5D59"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <TextBlock Text="APK для установки на телефон. Package ID, подпись и иконка — в мастере."
+                               FontSize="12" Foreground="#5E5D59" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
+                        <Button Name="ExportApkBtn" Classes="accent" Content="Настроить и собрать .apk"
+                                Padding="12,5" CornerRadius="4" FontSize="12"/>
+                        <Border BorderBrush="#30302E" BorderThickness="1" CornerRadius="4" Padding="8,5" VerticalAlignment="Center">
+                            <TextBlock Text="Android" FontSize="11" FontWeight="Medium" Foreground="#788F69"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
                 <TextBlock Name="StatusText" Foreground="#7AB868" FontSize="12"
                            TextWrapping="Wrap" IsVisible="False" Margin="0,14,0,0"/>
             </StackPanel>

@@ -33,6 +33,7 @@ public partial class ProjectOptionsDialog : Window
             ExportBtn.IsEnabled = false;
             ChangeMainFileBtn.IsEnabled = false;
             ExeBuildSection.IsVisible = false;
+            ApkBuildSection.IsVisible = false;
         }
         else
         {
@@ -57,6 +58,7 @@ public partial class ProjectOptionsDialog : Window
             ProjectSubtitleText.Text = is2D ? "2D проект — графическое окно" : "Консольный проект";
 
             ExeBuildSection.IsVisible = is2D;
+            ApkBuildSection.IsVisible = true;
         }
 
         ChangeMainFileBtn.Click += async (_, _) =>
@@ -84,6 +86,12 @@ public partial class ProjectOptionsDialog : Window
         ExportExeBtn.Click += async (_, _) =>
         {
             var dlg = new ExportExeDialog(_projectDir, _mainFile);
+            await dlg.ShowDialog(this);
+        };
+
+        ExportApkBtn.Click += async (_, _) =>
+        {
+            var dlg = new ExportApkDialog(_projectDir, _mainFile);
             await dlg.ShowDialog(this);
         };
 
