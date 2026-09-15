@@ -170,19 +170,28 @@ if %errorlevel% equ 0 (
 :jdk_check
 rem Check JDK 17 for Android signing
 echo [3/6] Checking JDK 17 for Android signing...
-java -version 2>&1 | findstr "17\." >nul 2>&1
-if %errorlevel% equ 0 (
+set JDK17_FOUND=0
+java -version 2>&1 | findstr "17." >nul 2>&1
+if %errorlevel% equ 0 set JDK17_FOUND=1
+if %JDK17_FOUND% equ 1 (
   echo [OK] JDK 17 found
 ) else (
   echo JDK 17 not found, trying to install via winget...
   where winget >nul 2>&1
   if %errorlevel% equ 0 (
     winget install Microsoft.OpenJDK.17 --silent --accept-package-agreements --accept-source-agreements >nul 2>&1
+    java -version 2>&1 | findstr "17." >nul 2>&1
     if %errorlevel% equ 0 echo [OK] JDK 17 installed
   )
-  where keytool >nul 2>&1
-  if %errorlevel% neq 0 (
-    echo [WARN] keytool still not found - install JDK 17 manually: https://learn.microsoft.com/java/openjdk/download
+  set KEYTOOL_FOUND=0
+  where keytool >nul 2>&1 && set KEYTOOL_FOUND=1
+  if exist "%ProgramFiles%\Java\jdk*\bin\keytool.exe" set KEYTOOL_FOUND=1
+  if exist "%ProgramFiles%\Microsoft\jdk-17*\bin\keytool.exe" set KEYTOOL_FOUND=1
+  if exist "%ProgramFiles%\Eclipse Adoptium\jdk-17*\bin\keytool.exe" set KEYTOOL_FOUND=1
+  if exist "%ProgramFiles%\Microsoft\jdk-11*\bin\keytool.exe" set KEYTOOL_FOUND=1
+  if %KEYTOOL_FOUND% equ 0 (
+    echo [WARN] keytool not in PATH - but keystore already exists, APK signing will still work
+    echo       If you need to create new keystore, install JDK 17: https://learn.microsoft.com/java/openjdk/download
   ) else (
     echo [OK] keytool found
   )
