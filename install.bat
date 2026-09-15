@@ -168,18 +168,41 @@ if !errorlevel! equ 0 (
 )
 
 :jdk_check
-rem Check JDK 17 for Android signing
+rem Check JDK 17 for Android signing - handles custom path via JAVA_HOME
 echo [3/6] Checking JDK 17 for Android signing...
 set JDK17_FOUND=0
-java -version 2>&1 | findstr "17." >nul 2>&1
-if !errorlevel! equ 0 set JDK17_FOUND=1
+set JDK17_PATH=
+rem Check JAVA_HOME first
+if defined JAVA_HOME if exist "%JAVA_HOME%\bin\java.exe" (
+  "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "17." >nul 2>&1
+  if !errorlevel! equ 0 set JDK17_FOUND=1 & set JDK17_PATH=%JAVA_HOME%
+)
+if !JDK17_FOUND! equ 0 (
+  java -version 2>&1 | findstr "17." >nul 2>&1
+  if !errorlevel! equ 0 set JDK17_FOUND=1
+)
+rem Check common locations if still not found
+if !JDK17_FOUND! equ 0 (
+  for /D %%D in ("%ProgramFiles%\Microsoft\jdk-17*") do if exist "%%D\bin\java.exe" ("%%D\bin\java.exe" -version 2>&1 | findstr "17." >nul 2>&1 && set JDK17_FOUND=1 & set JDK17_PATH=%%D)
+)
+if !JDK17_FOUND! equ 0 (
+  for /D %%D in ("%ProgramFiles%\Eclipse Adoptium\jdk-17*") do if exist "%%D\bin\java.exe" ("%%D\bin\java.exe" -version 2>&1 | findstr "17." >nul 2>&1 && set JDK17_FOUND=1 & set JDK17_PATH=%%D)
+)
+if !JDK17_FOUND! equ 0 (
+  for /D %%D in ("%ProgramFiles%\Java\jdk-17*") do if exist "%%D\bin\java.exe" ("%%D\bin\java.exe" -version 2>&1 | findstr "17." >nul 2>&1 && set JDK17_FOUND=1 & set JDK17_PATH=%%D)
+)
 if !JDK17_FOUND! equ 1 (
-  echo [OK] JDK 17 found
+  echo [OK] JDK 17 found at !JDK17_PATH!
+  if defined JDK17_PATH set "PATH=!JDK17_PATH!\bin;!PATH!"
 ) else (
-  echo JDK 17 not found, trying to install via winget...
+  echo JDK 17 not found in PATH or common locations
+  echo      JAVA_HOME=!JAVA_HOME!
+  echo      Try: setx JAVA_HOME "C:\Path\To\Your\JDK17" and restart console
+  echo      Or add JDK 17 bin to PATH
   where winget >nul 2>&1
   if !errorlevel! equ 0 (
-    winget install Microsoft.OpenJDK.17 --silent --accept-package-agreements --accept-source-agreements >nul 2>&1
+    echo Trying to install via winget ^(may need admin^)...
+    powershell -NoProfile -Command "$p = Start-Process -FilePath 'winget' -ArgumentList 'install Microsoft.OpenJDK.17 --silent --accept-package-agreements --accept-source-agreements' -PassThru -NoNewWindow; if (-not $p.WaitForExit(120000)) { try { $p.Kill($true) } catch {}; Write-Host '[TIMEOUT] winget timed out'; exit 1 } else { exit $p.ExitCode }" >nul 2>&1
     java -version 2>&1 | findstr "17." >nul 2>&1
     if !errorlevel! equ 0 echo [OK] JDK 17 installed
   )
@@ -189,9 +212,11 @@ if !JDK17_FOUND! equ 1 (
   if exist "%ProgramFiles%\Microsoft\jdk-17*\bin\keytool.exe" set KEYTOOL_FOUND=1
   if exist "%ProgramFiles%\Eclipse Adoptium\jdk-17*\bin\keytool.exe" set KEYTOOL_FOUND=1
   if exist "%ProgramFiles%\Microsoft\jdk-11*\bin\keytool.exe" set KEYTOOL_FOUND=1
+  if defined JAVA_HOME if exist "%JAVA_HOME%\bin\keytool.exe" set KEYTOOL_FOUND=1
+  if defined JDK17_PATH if exist "!JDK17_PATH!\bin\keytool.exe" set KEYTOOL_FOUND=1
   if !KEYTOOL_FOUND! equ 0 (
-    echo [WARN] keytool not in PATH - but keystore already exists, APK signing will still work
-    echo       If you need to create new keystore, install JDK 17: https://learn.microsoft.com/java/openjdk/download
+    echo [WARN] keytool not found - install JDK 17 manually: https://learn.microsoft.com/java/openjdk/download
+    echo       Or set JAVA_HOME to your JDK 17 path
   ) else (
     echo [OK] keytool found
   )
@@ -210,8 +235,12 @@ if !ANDROID_SDK_FOUND! equ 1 (
   echo [WARN] Android SDK not found - trying to install via winget...
   where winget >nul 2>&1
   if !errorlevel! equ 0 (
-    winget install Google.AndroidStudio --silent --accept-package-agreements --accept-source-agreements >nul 2>&1
-    if !errorlevel! equ 0 echo [OK] Android Studio installed - launch it once to finish SDK setup
+    echo Installing JDK 17 via winget ^(may take 2 min, please wait^)...
+    winget install Microsoft.OpenJDK.17 --silent --accept-package-agreements --accept-source-agreements
+    java -version 2>&1 | findstr "17." >nul 2>&1
+    if !errorlevel! equ 0 echo [OK] JDK 17 installed
+  ) else (
+    echo [WARN] winget not found - install JDK 17 manually: https://learn.microsoft.com/java/openjdk/download
   )
   if !ANDROID_SDK_FOUND! equ 0 echo [WARN] Android SDK still not found - install Android Studio manually: https://developer.android.com/studio
 )
