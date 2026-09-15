@@ -123,10 +123,10 @@ echo ========================================
 
 rem Build Windows runtime - required
 echo [1/6] Windows runtime ^(net8.0-windows^)...
-dotnet build Ncode -c Release -f net8.0-windows --nologo
+dotnet build "%~dp0Ncode\Ncode.csproj" -c Release -f net8.0-windows --nologo
 if %errorlevel% neq 0 (
   echo [WARN] Windows build failed, trying net8.0...
-  dotnet build Ncode -c Release -f net8.0 --nologo
+  dotnet build "%~dp0Ncode\Ncode.csproj" -c Release -f net8.0 --nologo
   if %errorlevel% neq 0 (
     echo [ERROR] Runtime build failed
     pause
@@ -134,7 +134,7 @@ if %errorlevel% neq 0 (
   )
 ) else (
   rem Also build headless for tests
-  dotnet build Ncode -c Release -f net8.0 --nologo >nul 2>&1
+  dotnet build "%~dp0Ncode\Ncode.csproj" -c Release -f net8.0 --nologo >nul 2>&1
 )
 
 rem Android workload for future - don't fail whole install if missing
@@ -209,7 +209,7 @@ if %ANDROID_SDK_FOUND% equ 1 (
 
 rem Try Android runtime if workload exists - optional
 echo [5/6] Trying Android runtime ^(optional^)...
-dotnet build Ncode.Android -c Release -f net11.0-android --nologo >nul 2>&1
+dotnet build "%~dp0Ncode.Android\Ncode.Android.csproj" -c Release -f net11.0-android --nologo >nul 2>&1
 if %errorlevel% equ 0 (
   echo [OK] Android runtime built
 ) else (
@@ -237,7 +237,7 @@ if not exist "%KEYSTORE%" (
 rem Try building Android APK in Release with signing if possible
 if exist "%KEYSTORE%" (
   echo Building Android release APK ^(signed^) for verification...
-  dotnet publish Ncode.Android\Ncode.Android.csproj -c Release -f net11.0-android -p:AndroidKeyStore=true -p:AndroidSigningKeyStore="%KEYSTORE%" -p:AndroidSigningKeyAlias=ncode -p:AndroidSigningKeyPass=ncode123 -p:AndroidSigningStorePass=ncode123 -o "%TEMP%\NcodeApkTest" --nologo >nul 2>&1
+  dotnet publish "%~dp0Ncode.Android\Ncode.Android.csproj" -c Release -f net11.0-android -p:AndroidKeyStore=true -p:AndroidSigningKeyStore="%KEYSTORE%" -p:AndroidSigningKeyAlias=ncode -p:AndroidSigningKeyPass=ncode123 -p:AndroidSigningStorePass=ncode123 -o "%TEMP%\NcodeApkTest" --nologo >nul 2>&1
   if %errorlevel% equ 0 (
     echo [OK] Android release APK can be built - export via editor ^(Project - Export .apk^) will be signed
     rmdir /s /q "%TEMP%\NcodeApkTest" >nul 2>&1
