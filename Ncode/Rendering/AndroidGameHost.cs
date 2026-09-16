@@ -46,12 +46,26 @@ public sealed class AndroidGameHost : IGameHost
 
     public void Invalidate()
     {
-        if (_view != null) _view.Post(() => _view.Invalidate());
-        else if (GetObjectsToRender != null && _view is Ncode.Android.AndroidGameView gv)
+        if (_view is Ncode.Android.AndroidGameView gv && GetObjectsToRender != null)
         {
-            var objs = GetObjectsToRender.Invoke();
-            if (objs != null) gv.SetObjects(objs);
+            try
+            {
+                var objs = GetObjectsToRender.Invoke();
+                if (objs != null) gv.SetObjects(objs);
+            }
+            catch { }
         }
+        if (_view != null) _view.Post(() => _view.Invalidate());
+    }
+
+    public void ShowError(string message)
+    {
+        if (_view is Ncode.Android.AndroidGameView gv) gv.SetError(message);
+    }
+
+    public void ShowHud(string message)
+    {
+        if (_view is Ncode.Android.AndroidGameView gv) gv.SetHud(message);
     }
 
     public void CloseWindow() => _active = false;
@@ -76,6 +90,8 @@ public sealed class AndroidGameHost : IGameHost
     public void CreateWindow(int width, int height, string title, bool resizable, bool fullscreen, string? iconPath) { }
 
     public void Invalidate() { }
+    public void ShowError(string message) { }
+    public void ShowHud(string message) { }
     public void CloseWindow() { }
     public void WaitUntilClosed() { }
 #endif

@@ -152,7 +152,7 @@ class GameObject
             {
                 try { h = Convert.ToDouble(ph, System.Globalization.CultureInfo.InvariantCulture); } catch { }
             }
-            return (X, Y, w, h);
+            return (X - w / 2.0, Y - h / 2.0, w, h);
         }
 
         public bool ContainsPoint(double px, double py)
@@ -1682,8 +1682,26 @@ class GameObject
 
     static void ExecCreateObject(string text, int line)
     {
-        string name = Regex.Replace(text.Trim(), @"^созда(ть|й)\s+(объект|обьект)\b", "", RegexOptions.IgnoreCase).Trim();
-        if (name == "") throw new Exception($"строка {line}: укажите имя объекта, например: создать объект какашка");
+        string rest = Regex.Replace(text.Trim(), @"^созда(ть|й)\s+(объект|обьект)\b", "", RegexOptions.IgnoreCase).Trim();
+        if (rest == "") throw new Exception($"строка {line}: укажите имя объекта, например: создать объект какашка");
+        string name = rest;
+        double? initX = null, initY = null;
+        var toks = SplitArgsPreservingQuotes(rest);
+        if (toks.Count >= 3)
+        {
+            string sx = toks[^2], sy = toks[^1];
+            bool px = double.TryParse(sx.Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double vx);
+            bool py = double.TryParse(sy.Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double vy);
+            if (px && py)
+            {
+                string candName = string.Join(" ", toks[..^2]).Trim().Trim('"');
+                if (!string.IsNullOrEmpty(candName))
+                {
+                    name = candName;
+                    initX = vx; initY = vy;
+                }
+            }
+        }
 
         EnsureGameWindow();
 
@@ -1691,10 +1709,14 @@ class GameObject
         {
             if (!GameObjects.TryGetValue(name, out var obj))
             {
-                GameObjects[name] = new GameObject { Name = name };
+                GameObjects[name] = obj = new GameObject { Name = name };
             }
+            var o = GameObjects[name];
+            if (initX.HasValue) o.X = initX.Value;
+            if (initY.HasValue) o.Y = initY.Value;
         }
         SyncObjectVars(name);
+        if (initX.HasValue || initY.HasValue) InvalidateGameWindow();
     }
 
     static void ExecAssignImage(string text, int line)
@@ -3659,25 +3681,31 @@ class GameObject
                 var db = dyn.GetBounds();
                 if (SceneBorderEnabled)
                 {
-                    if (dyn.X < 0)
+                    double left = dyn.X - db.Width / 2.0;
+                    double right = dyn.X + db.Width / 2.0;
+                    double top = dyn.Y - db.Height / 2.0;
+                    double bottom = dyn.Y + db.Height / 2.0;
+                    double halfW = winW / 2.0;
+                    double halfH = winH / 2.0;
+                    if (left < -halfW)
                     {
-                        dyn.X = 0;
+                        dyn.X = -halfW + db.Width / 2.0;
                         dyn.VelocityX = Math.Abs(dyn.VelocityX) * (dyn.Elasticity > 0 ? dyn.Elasticity : 1.0);
                     }
-                    else if (dyn.X + db.Width > winW)
+                    else if (right > halfW)
                     {
-                        dyn.X = Math.Max(0, winW - db.Width);
+                        dyn.X = halfW - db.Width / 2.0;
                         dyn.VelocityX = -Math.Abs(dyn.VelocityX) * (dyn.Elasticity > 0 ? dyn.Elasticity : 1.0);
                     }
 
-                    if (dyn.Y < 0)
+                    if (top < -halfH)
                     {
-                        dyn.Y = 0;
+                        dyn.Y = -halfH + db.Height / 2.0;
                         dyn.VelocityY = Math.Abs(dyn.VelocityY) * (dyn.Elasticity > 0 ? dyn.Elasticity : 1.0);
                     }
-                    else if (dyn.Y + db.Height > winH)
+                    else if (bottom > halfH)
                     {
-                        dyn.Y = Math.Max(0, winH - db.Height);
+                        dyn.Y = halfH - db.Height / 2.0;
                         dyn.VelocityY = -Math.Abs(dyn.VelocityY) * (dyn.Elasticity > 0 ? dyn.Elasticity : 1.0);
                     }
                 }
@@ -3693,7 +3721,8 @@ class GameObject
                     SyncObjectVars(dyn.Name);
                 }
 
-                bool isOff = (dyn.X + db.Width < 0 || dyn.X > winW || dyn.Y + db.Height < 0 || dyn.Y > winH);
+                bool isOff = (dyn.X + db.Width / 2.0 < -winW / 2.0 || dyn.X - db.Width / 2.0 > winW / 2.0
+                           || dyn.Y + db.Height / 2.0 < -winH / 2.0 || dyn.Y - db.Height / 2.0 > winH / 2.0);
                 if (isOff)
                 {
                     if (!dyn.WasOffScreen)
@@ -4932,14 +4961,51 @@ class GameObject
                 var json = File.ReadAllText(configPath, Encoding.UTF8);
                 ActiveConfig = System.Text.Json.JsonSerializer.Deserialize<GameConfig>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             }
-            catch (Exception ex) { Console.Error.WriteLine("[конфиг] " + ex.Message); }
+            catch (Exception ex) { Console.Error.WriteLine("[конфиг] " + ex.Message); try { File.AppendAllText(Path.Combine(baseDir, "ncode_log.txt"), "[конфиг ошибка] " + ex + "\n"); } catch { } }
         }
+
+        bool hasGame = File.Exists(Path.Combine(baseDir, "game.json"))
+            || File.Exists(Path.Combine(baseDir, "main.ncode"))
+            || File.Exists(Path.Combine(baseDir, "game.ncode"));
+        string diagFiles = "";
+        try { diagFiles = string.Join(", ", Directory.GetFiles(baseDir, "*", SearchOption.TopDirectoryOnly).Select(Path.GetFileName).Take(20)); } catch { }
+        string diagCfg = ActiveConfig?.Main ?? (File.Exists(configPath) ? "(ошибка парса)" : "(нет game.json)");
+        string diag = $"папка: {baseDir}\nфайлов: {diagFiles}\nконфиг main: {diagCfg}  bundle: {(bundleStream!=null?"да":"нет")}\nвыбран: {(ActiveConfig?.Main ?? "main.ncode")}";
+        try { File.AppendAllText(Path.Combine(baseDir, "ncode_log.txt"), DateTime.Now + " diag: " + diag.Replace("\n"," | ") + "\n"); } catch { }
+        if (!hasGame)
+        {
+            string msg = bundleStream == null
+                ? "Игра не найдена: в APK нет GameBundle.zip.\nПересоберите игру через редактор:\nПроект - Экспорт .apk"
+                : "Игра не найдена: в бандле нет game.json / main.ncode.\n" + diag;
+            Console.WriteLine(msg);
+            (host as global::Ncode.Rendering.AndroidGameHost)?.ShowError(msg);
+            return;
+        }
+        (host as global::Ncode.Rendering.AndroidGameHost)?.ShowHud(diag);
 
         string path;
         if (ActiveConfig?.Main != null && File.Exists(Path.Combine(baseDir, ActiveConfig.Main))) path = Path.Combine(baseDir, ActiveConfig.Main);
         else if (File.Exists(Path.Combine(baseDir, "main.ncode"))) path = Path.Combine(baseDir, "main.ncode");
         else if (File.Exists(Path.Combine(baseDir, "game.ncode"))) path = Path.Combine(baseDir, "game.ncode");
         else path = Path.Combine(baseDir, "main.ncode");
+
+        var hudCts = new System.Threading.CancellationTokenSource();
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                while (!hudCts.Token.IsCancellationRequested)
+                {
+                    await Task.Delay(600, hudCts.Token);
+                    int cnt = 0; string names = "";
+                    lock (GameObjectsLock) { cnt = GameObjects.Count; names = string.Join(", ", GameObjects.Keys.Take(8)); }
+                    string hud2 = $"файл: {Path.GetFileName(path)}\nобъектов: {cnt} {(cnt>0? names : "(нет)")}\nокно: {GameHostService.Current.IsActive}  {GameHostService.Current.ClientWidth}x{GameHostService.Current.ClientHeight}  центр 0,0";
+                    if (!GameHostService.Current.IsActive) hud2 += "\nОкно не создалось";
+                    if (cnt==0) hud2 += "\nЖдём объекты… создай в при запуске";
+                    (host as global::Ncode.Rendering.AndroidGameHost)?.ShowHud(diag + "\n---\n" + hud2);
+                }
+            } catch { }
+        }, hudCts.Token);
 
         try
         {
@@ -4949,9 +5015,13 @@ class GameObject
         catch (Exception ex)
         {
             Console.WriteLine("Ошибка: " + ex.Message);
+            string full = "Ошибка: " + ex.Message + "\n" + ex.StackTrace;
+            try { File.WriteAllText(Path.Combine(baseDir, "ncode_error.txt"), full); File.AppendAllText(Path.Combine(baseDir, "ncode_log.txt"), full + "\n"); } catch { }
+            (host as global::Ncode.Rendering.AndroidGameHost)?.ShowError(full.Length>2200? full.Substring(0,2200): full);
         }
         finally
         {
+            try { hudCts.Cancel(); } catch { }
             StopPhysics();
             StopAllAudio();
         }

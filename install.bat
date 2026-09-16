@@ -7,7 +7,6 @@ echo  Windows + Android ^(future^)
 echo ========================================
 echo.
 
-rem 1. Check dotnet
 where dotnet >nul 2>&1
 if !errorlevel! neq 0 goto :install_dotnet
 
@@ -27,7 +26,6 @@ echo.
 echo [.NET 8 SDK not found, trying user-local install without admin...]
 echo.
 
-rem 1.1 Try user-local install via dotnet-install.ps1 - no admin needed
 where powershell >nul 2>&1
 if !errorlevel! neq 0 (
   echo [WARN] PowerShell not found, skipping user-local install
@@ -47,11 +45,9 @@ if !errorlevel! neq 0 (
 echo Installing .NET 8 SDK to %DOTNET_INSTALL_DIR% ...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "& $env:TEMP\dotnet-install.ps1 -Channel 8.0 -InstallDir $env:LocalAppData\Microsoft\dotnet -Quality GA" >nul 2>&1
 
-rem Add to PATH for current session
 set "PATH=%DOTNET_INSTALL_DIR%;%PATH%"
 set "DOTNET_ROOT=%DOTNET_INSTALL_DIR%"
 
-rem Check again
 where dotnet >nul 2>&1
 if !errorlevel! neq 0 goto :need_admin_install
 for /f "tokens=1 delims=." %%A in ('dotnet --version 2^>nul') do set DOTNET_MAJOR=%%A
@@ -83,7 +79,6 @@ if !errorlevel! neq 0 (
 
 echo [OK] Admin rights OK, installing via winget / installer...
 
-rem Try winget on Win10/11
 where winget >nul 2>&1
 if !errorlevel! equ 0 (
   echo Installing via winget...
@@ -95,7 +90,6 @@ if !errorlevel! equ 0 (
   )
 )
 
-rem Fallback - official installer via dotnet-install.ps1 system-wide
 echo Downloading .NET 8 SDK installer...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile $env:TEMP\dotnet-install.ps1 -UseBasicParsing" >nul 2>&1
 powershell -NoProfile -ExecutionPolicy Bypass -Command "& $env:TEMP\dotnet-install.ps1 -Channel 8.0 -Quality GA" >nul 2>&1
@@ -121,7 +115,6 @@ echo ========================================
 echo  Building runtime
 echo ========================================
 
-rem Build Windows runtime - required
 echo [1/6] Windows runtime ^(net8.0-windows^)...
 dotnet build "%~dp0Ncode\Ncode.csproj" -c Release -f net8.0-windows --nologo
 if !errorlevel! neq 0 (
@@ -133,11 +126,9 @@ if !errorlevel! neq 0 (
     exit /b 1
   )
 ) else (
-  rem Also build headless for tests
   dotnet build "%~dp0Ncode\Ncode.csproj" -c Release -f net8.0 --nologo >nul 2>&1
 )
 
-rem Android workload for future - don't fail whole install if missing
 echo.
 echo [2/6] Android workload ^(future^)...
 dotnet workload list 2>nul | findstr /i android >nul 2>&1
@@ -146,6 +137,9 @@ if !errorlevel! equ 0 (
   goto :jdk_check
 )
 echo Workload android not found
+echo      Installed SDKs ^(workload belongs to one of them^):
+dotnet --list-sdks 2>nul
+echo      Current: & dotnet --version 2>nul
 net session >nul 2>&1
 if !errorlevel! neq 0 (
   echo [WARN] Need admin for workload install - skip for now
@@ -168,28 +162,25 @@ if !errorlevel! equ 0 (
 )
 
 :jdk_check
-rem Check JDK 17 for Android signing - handles custom path via JAVA_HOME
 echo [3/6] Checking JDK 17 for Android signing...
 set JDK17_FOUND=0
 set JDK17_PATH=
-rem Check JAVA_HOME first
 if defined JAVA_HOME if exist "%JAVA_HOME%\bin\java.exe" (
   "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "17." >nul 2>&1
-  if !errorlevel! equ 0 set JDK17_FOUND=1 & set JDK17_PATH=%JAVA_HOME%
+  if !errorlevel! equ 0 (set "JDK17_FOUND=1" & set "JDK17_PATH=%JAVA_HOME%")
 )
 if !JDK17_FOUND! equ 0 (
   java -version 2>&1 | findstr "17." >nul 2>&1
   if !errorlevel! equ 0 set JDK17_FOUND=1
 )
-rem Check common locations if still not found
 if !JDK17_FOUND! equ 0 (
-  for /D %%D in ("%ProgramFiles%\Microsoft\jdk-17*") do if exist "%%D\bin\java.exe" ("%%D\bin\java.exe" -version 2>&1 | findstr "17." >nul 2>&1 && set JDK17_FOUND=1 & set JDK17_PATH=%%D)
+  for /D %%D in ("%ProgramFiles%\Microsoft\jdk-17*") do if exist "%%D\bin\java.exe" ("%%D\bin\java.exe" -version 2>&1 | findstr "17." >nul 2>&1 && (set "JDK17_FOUND=1" & set "JDK17_PATH=%%D"))
 )
 if !JDK17_FOUND! equ 0 (
-  for /D %%D in ("%ProgramFiles%\Eclipse Adoptium\jdk-17*") do if exist "%%D\bin\java.exe" ("%%D\bin\java.exe" -version 2>&1 | findstr "17." >nul 2>&1 && set JDK17_FOUND=1 & set JDK17_PATH=%%D)
+  for /D %%D in ("%ProgramFiles%\Eclipse Adoptium\jdk-17*") do if exist "%%D\bin\java.exe" ("%%D\bin\java.exe" -version 2>&1 | findstr "17." >nul 2>&1 && (set "JDK17_FOUND=1" & set "JDK17_PATH=%%D"))
 )
 if !JDK17_FOUND! equ 0 (
-  for /D %%D in ("%ProgramFiles%\Java\jdk-17*") do if exist "%%D\bin\java.exe" ("%%D\bin\java.exe" -version 2>&1 | findstr "17." >nul 2>&1 && set JDK17_FOUND=1 & set JDK17_PATH=%%D)
+  for /D %%D in ("%ProgramFiles%\Java\jdk-17*") do if exist "%%D\bin\java.exe" ("%%D\bin\java.exe" -version 2>&1 | findstr "17." >nul 2>&1 && (set "JDK17_FOUND=1" & set "JDK17_PATH=%%D"))
 )
 if !JDK17_FOUND! equ 1 (
   echo [OK] JDK 17 found at !JDK17_PATH!
@@ -222,31 +213,34 @@ if !JDK17_FOUND! equ 1 (
   )
 )
 
-rem Check Android SDK
 echo [4/6] Checking Android SDK...
 set ANDROID_SDK_FOUND=0
 if defined ANDROID_HOME if exist "%ANDROID_HOME%\platform-tools\adb.exe" set ANDROID_SDK_FOUND=1
 if defined ANDROID_SDK_ROOT if exist "%ANDROID_SDK_ROOT%\platform-tools\adb.exe" set ANDROID_SDK_FOUND=1
 if exist "%LocalAppData%\Android\Sdk\platform-tools\adb.exe" set ANDROID_SDK_FOUND=1
 if exist "%ProgramFiles%\Android\Android Studio\bin\studio64.exe" set ANDROID_SDK_FOUND=1
+for /f "tokens=2*" %%R in ('reg query "HKCU\SOFTWARE\Android SDK Tools" /v Path 2^>nul ^| findstr /i /c:"REG_SZ"') do if exist "%%S\platform-tools\adb.exe" set ANDROID_SDK_FOUND=1
+for /f "tokens=2*" %%R in ('reg query "HKLM\SOFTWARE\Android SDK Tools" /v Path 2^>nul ^| findstr /i /c:"REG_SZ"') do if exist "%%S\platform-tools\adb.exe" set ANDROID_SDK_FOUND=1
 if !ANDROID_SDK_FOUND! equ 1 (
   echo [OK] Android SDK found
 ) else (
-  echo [WARN] Android SDK not found - trying to install via winget...
-  where winget >nul 2>&1
-  if !errorlevel! equ 0 (
-    echo Installing JDK 17 via winget ^(may take 2 min, please wait^)...
-    winget install Microsoft.OpenJDK.17 --silent --accept-package-agreements --accept-source-agreements
-    java -version 2>&1 | findstr "17." >nul 2>&1
-    if !errorlevel! equ 0 echo [OK] JDK 17 installed
-  ) else (
-    echo [WARN] winget not found - install JDK 17 manually: https://learn.microsoft.com/java/openjdk/download
-  )
-  if !ANDROID_SDK_FOUND! equ 0 echo [WARN] Android SDK still not found - install Android Studio manually: https://developer.android.com/studio
+  echo [WARN] Android SDK not found
+  echo      ANDROID_HOME=!ANDROID_HOME!
+  echo      ANDROID_SDK_ROOT=!ANDROID_SDK_ROOT!
+  echo      Default location checked: %LocalAppData%\Android\Sdk\platform-tools\adb.exe
+  echo      Install Android Studio: https://developer.android.com/studio
+  echo      Or cmdline-tools only: https://developer.android.com/studio#command-line-tools-only
+  echo      Then run: setx ANDROID_HOME "%%LocalAppData%%\Android\Sdk" and restart console
 )
 
-rem Try Android runtime if workload exists - optional
 echo [5/6] Trying Android runtime ^(optional^)...
+set CUR_MAJOR=0
+for /f "tokens=1 delims=." %%A in ('dotnet --version 2^>nul') do set CUR_MAJOR=%%A
+if !CUR_MAJOR! lss 11 (
+  echo [..] Android needs .NET 11 SDK for net11.0-android ^(current: !CUR_MAJOR!.x^)
+  echo      Install it: https://dotnet.microsoft.com/download - Windows runtime above is ready
+  goto :keystore
+)
 dotnet build "%~dp0Ncode.Android\Ncode.Android.csproj" -c Release -f net11.0-android --nologo >nul 2>&1
 if !errorlevel! equ 0 (
   echo [OK] Android runtime built
@@ -254,7 +248,7 @@ if !errorlevel! equ 0 (
   echo [..] Android runtime not built ^(no workload/SDK^) - ok, Windows runtime ready
 )
 
-rem Release APK signing - generate keystore if missing
+:keystore
 echo.
 echo [6/6] Release APK keystore ^(for signed .apk/.aab^)...
 set KEYSTORE=%AppData%\Ncode\ncode.keystore
@@ -272,7 +266,6 @@ if not exist "%KEYSTORE%" (
   echo [OK] Keystore exists at %KEYSTORE%
 )
 
-rem Try building Android APK in Release with signing if possible
 if exist "%KEYSTORE%" (
   echo Building Android release APK ^(signed^) for verification...
   dotnet publish "%~dp0Ncode.Android\Ncode.Android.csproj" -c Release -f net11.0-android -p:AndroidKeyStore=true -p:AndroidSigningKeyStore="%KEYSTORE%" -p:AndroidSigningKeyAlias=ncode -p:AndroidSigningKeyPass=ncode123 -p:AndroidSigningStorePass=ncode123 -o "%TEMP%\NcodeApkTest" --nologo >nul 2>&1
@@ -295,3 +288,4 @@ echo  Tests: dotnet test
 echo.
 pause
 exit /b 0
+

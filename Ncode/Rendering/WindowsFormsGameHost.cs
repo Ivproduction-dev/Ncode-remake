@@ -135,7 +135,14 @@ public sealed class WindowsFormsGameHost : IGameHost
 
                 _gameForm.Paint += (s, pe) => Render(pe.Graphics, _gameForm.ClientSize.Width, _gameForm.ClientSize.Height);
                 _gameForm.Resize += (s, e) => Invalidate();
-                _gameForm.MouseDown += (s, me) => OnPointerDown?.Invoke(me.X, me.Y);
+                _gameForm.MouseDown += (s, me) =>
+                {
+                    int cw = _gameForm.ClientSize.Width;
+                    int ch = _gameForm.ClientSize.Height;
+                    double cx = me.X - cw / 2.0;
+                    double cy = me.Y - ch / 2.0;
+                    OnPointerDown?.Invoke(cx, cy);
+                };
                 _gameForm.KeyDown += (s, ke) =>
                 {
                     string k = ke.KeyCode switch
@@ -252,11 +259,16 @@ public sealed class WindowsFormsGameHost : IGameHost
             float w = img != null ? img.Width * scale : Math.Max(24, (int)(60 * scale));
             float h = img != null ? img.Height * scale : Math.Max(24, (int)(60 * scale));
 
+            float cxScreen = clientW / 2f;
+            float cyScreen = clientH / 2f;
+            float drawX = cxScreen + (float)obj.X - w / 2f;
+            float drawY = cyScreen + (float)obj.Y - h / 2f;
+
             var gState = g.Save();
             if (Math.Abs(obj.Angle) > 1e-4)
             {
-                float cx = (float)obj.X + w / 2f;
-                float cy = (float)obj.Y + h / 2f;
+                float cx = drawX + w / 2f;
+                float cy = drawY + h / 2f;
                 g.TranslateTransform(cx, cy);
                 g.RotateTransform((float)obj.Angle);
                 g.TranslateTransform(-cx, -cy);
@@ -266,14 +278,14 @@ public sealed class WindowsFormsGameHost : IGameHost
             {
                 if (alpha >= 0.999f)
                 {
-                    g.DrawImage(img, (float)obj.X, (float)obj.Y, w, h);
+                    g.DrawImage(img, drawX, drawY, w, h);
                 }
                 else if (alpha > 0.001f)
                 {
                     var matrix = new System.Drawing.Imaging.ColorMatrix { Matrix33 = alpha };
                     using var attr = new System.Drawing.Imaging.ImageAttributes();
                     attr.SetColorMatrix(matrix, System.Drawing.Imaging.ColorMatrixFlag.Default, System.Drawing.Imaging.ColorAdjustType.Bitmap);
-                    g.DrawImage(img, new Rectangle((int)obj.X, (int)obj.Y, (int)w, (int)h), 0, 0, img.Width, img.Height, GraphicsUnit.Pixel, attr);
+                    g.DrawImage(img, new Rectangle((int)drawX, (int)drawY, (int)w, (int)h), 0, 0, img.Width, img.Height, GraphicsUnit.Pixel, attr);
                 }
             }
             else
@@ -283,12 +295,12 @@ public sealed class WindowsFormsGameHost : IGameHost
                 int aByte = Math.Clamp((int)(alpha * 220), 0, 255);
                 using var brush = new SolidBrush(Color.FromArgb(aByte, 137, 180, 250));
                 using var pen = new Pen(Color.FromArgb(Math.Clamp((int)(alpha * 255), 0, 255), 205, 214, 244), 2);
-                g.FillRectangle(brush, (int)obj.X, (int)obj.Y, boxW, boxH);
-                g.DrawRectangle(pen, (int)obj.X, (int)obj.Y, boxW, boxH);
+                g.FillRectangle(brush, (int)drawX, (int)drawY, boxW, boxH);
+                g.DrawRectangle(pen, (int)drawX, (int)drawY, boxW, boxH);
 
                 using var font = new Font("Segoe UI", 9f, FontStyle.Bold);
                 using var textBrush = new SolidBrush(Color.FromArgb(Math.Clamp((int)(alpha * 255), 0, 255), 17, 17, 27));
-                g.DrawString(obj.Name, font, textBrush, (float)obj.X + 4, (float)obj.Y + 4);
+                g.DrawString(obj.Name, font, textBrush, drawX + 4, drawY + 4);
             }
             g.Restore(gState);
         }

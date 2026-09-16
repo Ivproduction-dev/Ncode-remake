@@ -68,6 +68,15 @@
                             <TextBox Name="VersionBox" Text="1.0" Padding="10,6" FontSize="13"
                                      Background="#262624" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4"/>
                         </StackPanel>
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Ориентация экрана" FontSize="12" Foreground="#B0AEA5"/>
+                            <ComboBox Name="OrientationCombo" HorizontalAlignment="Stretch" Padding="10,6"
+                                      Background="#262624" Foreground="#FAF9F5" BorderBrush="#30302E" CornerRadius="4">
+                                <ComboBoxItem Content="Автоматически" Tag="Unspecified" IsSelected="True"/>
+                                <ComboBoxItem Content="Портретная" Tag="Portrait"/>
+                                <ComboBoxItem Content="Альбомная" Tag="Landscape"/>
+                            </ComboBox>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

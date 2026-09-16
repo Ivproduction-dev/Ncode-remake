@@ -12,7 +12,16 @@ using Ncode.Rendering;
 
 namespace Ncode.Android;
 
-[Activity(Label = "@string/app_name", MainLauncher = true, Exported = true, ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize, ScreenOrientation = ScreenOrientation.Unspecified)]
+[Activity(MainLauncher = true, Exported = true, Theme = "@style/MainTheme",
+    ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.KeyboardHidden,
+#if SCREEN_PORTRAIT
+    ScreenOrientation = ScreenOrientation.Portrait,
+#elif SCREEN_LANDSCAPE
+    ScreenOrientation = ScreenOrientation.Landscape,
+#else
+    ScreenOrientation = ScreenOrientation.Unspecified,
+#endif
+    LaunchMode = LaunchMode.SingleTask)]
 public class MainActivity : Activity
 {
     private AndroidGameView? _gameView;
@@ -21,6 +30,7 @@ public class MainActivity : Activity
     {
         base.OnCreate(savedInstanceState);
 
+        try { ActionBar?.Hide(); } catch { }
         Window?.AddFlags(WindowManagerFlags.KeepScreenOn);
         Window?.AddFlags(WindowManagerFlags.Fullscreen);
         Window?.DecorView.SystemUiVisibility = (StatusBarVisibility)(SystemUiFlags.HideNavigation | SystemUiFlags.ImmersiveSticky | SystemUiFlags.Fullscreen);
@@ -30,7 +40,13 @@ public class MainActivity : Activity
         _gameView = new AndroidGameView(this);
         SetContentView(_gameView);
 
-        global::Ncode.Core.Abstractions.GameHostService.Current = new global::Ncode.Rendering.AndroidGameHost(_gameView);
+        var prevHost = global::Ncode.Core.Abstractions.GameHostService.Current;
+        var newHost = new global::Ncode.Rendering.AndroidGameHost(_gameView);
+        newHost.OnKeyDown = prevHost.OnKeyDown;
+        newHost.OnKeyUp = prevHost.OnKeyUp;
+        newHost.OnPointerDown = prevHost.OnPointerDown;
+        newHost.GetObjectsToRender = prevHost.GetObjectsToRender;
+        global::Ncode.Core.Abstractions.GameHostService.Current = newHost;
         global::Ncode.Core.Abstractions.AudioService.Current = new Ncode.Audio.AndroidAudioPlayer();
         global::Ncode.Core.Abstractions.DialogService.Current = new AndroidDialogService();
         global::Ncode.Core.Abstractions.ClipboardService.Current = new AndroidClipboard();
@@ -38,7 +54,11 @@ public class MainActivity : Activity
         _ = Task.Run(() =>
         {
             try { Program.RunAndroid(this, (global::Ncode.Rendering.AndroidGameHost)global::Ncode.Core.Abstractions.GameHostService.Current); }
-            catch (Exception ex) { global::Android.Util.Log.Error("Ncode", ex.ToString()); }
+            catch (Exception ex)
+            {
+                global::Android.Util.Log.Error("Ncode", ex.ToString());
+                try { _gameView?.SetError("Ошибка запуска игры:\n" + ex.Message); } catch { }
+            }
         });
     }
 

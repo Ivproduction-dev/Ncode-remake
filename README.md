@@ -15,10 +15,10 @@
 
 ## Быстрый старт
 
-1. Установи [.NET 8 SDK](https://dotnet.microsoft.com/download) (+ `dotnet workload install android` только для Android-рантайма).
+1. Установи [.NET 11 SDK](https://dotnet.microsoft.com/download) (для Windows хватит .NET 8+, для Android нужен .NET 11 + `dotnet workload install android` + Android SDK + JDK 17 — всё это проверяет/ставит `install.bat`).
 2. Собери рантайм: `dotnet build Ncode.sln` (Windows + headless) — редактор на Android не портируется, только `Ncode` + `Ncode.Core`
-3. Запусти редактор (только Windows): `editor.bat` (или `dotnet Ncode.Editor/bin/Debug/net8.0/Ncode.Editor.dll`)
-4. Или запусти файл напрямую (только Windows): `ncode.bat игра.ncode` / `dotnet Ncode/bin/Debug/net8.0-windows/Ncode.dll игра.ncode` (с окном) / `dotnet Ncode/bin/Debug/net8.0/Ncode.dll игра.ncode` (headless для тестов)
+3. Запусти редактор (только Windows): `editor.bat` (или `dotnet Ncode.Editor/bin/Release/net8.0/Ncode.Editor.dll`)
+4. Или запусти файл напрямую (только Windows): `ncode.bat игра.ncode` / `dotnet Ncode/bin/Release/net8.0-windows/Ncode.dll игра.ncode` (с окном) / `dotnet Ncode/bin/Release/net8.0/Ncode.dll игра.ncode` (headless для тестов)
 
 ## Документация
 

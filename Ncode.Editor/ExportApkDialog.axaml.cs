@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -112,6 +113,8 @@ public partial class ExportApkDialog : Window
         if (string.IsNullOrEmpty(outBase)) { ShowError("Укажите папку для сохранения."); return; }
         string version = (VersionBox.Text ?? "").Trim();
         if (string.IsNullOrEmpty(version)) version = "1.0";
+        string orientation = ((OrientationCombo.SelectedItem as ComboBoxItem)?.Tag as string) ?? "Unspecified";
+        if (orientation is not ("Portrait" or "Landscape" or "Unspecified")) orientation = "Unspecified";
         int versionCode = 1;
         var vm = Regex.Match(version, @"^(\d+)\.(\d+)(?:\.(\d+))?");
         if (vm.Success)
@@ -225,24 +228,17 @@ public partial class ExportApkDialog : Window
             SetStatus("Шаг 1/2 — компиляция проекта...", false);
             await Task.Delay(400);
 
-            // Быстрая проверка окружения до долгой сборки — не висеть
             SetStatus("Проверка Android SDK...", false);
-            bool workloadOk = await Task.Run(() =>
+            var envCheck = await CheckAndroidEnvAsync();
+            if (!envCheck.WorkloadOk)
             {
-                try
-                {
-                    var wpsi = new ProcessStartInfo("dotnet", "workload list") { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
-                    using var wp = Process.Start(wpsi);
-                    if (wp == null) return false;
-                    string wout = wp.StandardOutput.ReadToEnd();
-                    wp.WaitForExit(10000);
-                    return wout.IndexOf("android", StringComparison.OrdinalIgnoreCase) >= 0;
-                }
-                catch { return false; }
-            });
-            if (!workloadOk)
+                ShowError("Android workload не установлен." + envCheck.Details + "\nЗапустите install.bat от имени администратора или выполните: dotnet workload install android");
+                BuildBtn.IsEnabled = true; CancelBtn.IsEnabled = true; BuildProgress.IsVisible = false;
+                return;
+            }
+            if (!envCheck.Sdk11Ok)
             {
-                ShowError("Android workload не установлен. Выполните: dotnet workload install android\nЗатем установите Android SDK (Android Studio или командные tools) и JDK 17.");
+                ShowError("Для сборки Android нужен .NET 11 SDK (проект net11.0-android)." + envCheck.Details + "\nУстановите: https://dotnet.microsoft.com/download");
                 BuildBtn.IsEnabled = true; CancelBtn.IsEnabled = true; BuildProgress.IsVisible = false;
                 return;
             }
@@ -271,24 +267,8 @@ public partial class ExportApkDialog : Window
             {
                 var stdoutSb = new StringBuilder();
                 var stderrSb = new StringBuilder();
-                // Предварительная проверка workload до долгой сборки
-                try
-                {
-                    var wpsi = new ProcessStartInfo("dotnet", "workload list") { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
-                    using var wp = Process.Start(wpsi);
-                    if (wp != null)
-                    {
-                        string wout = await wp.StandardOutput.ReadToEndAsync();
-                        await wp.WaitForExitAsync();
-                        if (wout.IndexOf("android", StringComparison.OrdinalIgnoreCase) < 0)
-                        {
-                            lock (stderrSb) stderrSb.AppendLine("Android workload не установлен. Запустите install.bat от имени администратора или выполните: dotnet workload install android");
-                        }
-                    }
-                }
-                catch { }
                 var args = new StringBuilder();
-                args.Append($"publish \"{androidCsproj}\" -c Release -f net11.0-android -p:GameBundleZip=\"{tempZip}\" -p:ApplicationId={package} -p:ApplicationVersion={versionCode} -p:ApplicationDisplayVersion={version} -p:ApplicationTitle=\"{title}\" -o \"{tempPublish}\" --nologo");
+                args.Append($"publish \"{androidCsproj}\" -c Release -f net11.0-android -p:GameBundleZip=\"{tempZip}\" -p:ApplicationId={package} -p:ApplicationVersion={versionCode} -p:ApplicationDisplayVersion={version} -p:ApplicationTitle=\"{title}\" -p:AndroidScreenOrientation={orientation} -o \"{tempPublish}\" --nologo");
                 if (useSigning) args.Append(signingArgs);
                 var psi = new ProcessStartInfo("dotnet", args.ToString())
                 {
@@ -343,14 +323,39 @@ public partial class ExportApkDialog : Window
             }
 
             SetStatus("Копирование .apk...", false);
+            string? builtApk = null;
+            bool bundleInside = false;
             await Task.Run(() =>
             {
-                var apk = Directory.GetFiles(tempPublish!, "*.apk", SearchOption.AllDirectories).FirstOrDefault();
-                if (apk != null && File.Exists(apk))
+                builtApk = Directory.GetFiles(tempPublish!, "*.apk", SearchOption.AllDirectories).FirstOrDefault();
+                if (builtApk != null && File.Exists(builtApk))
                 {
-                    string dest = Path.Combine(gameOutputDir, safeName + ".apk");
-                    File.Copy(apk, dest, true);
+                    try
+                    {
+                        using var archive = new ZipArchive(File.OpenRead(builtApk), ZipArchiveMode.Read);
+                        bundleInside = archive.Entries.Any(e => e.FullName.Equals("assets/GameBundle.zip", StringComparison.OrdinalIgnoreCase));
+                    }
+                    catch { }
                 }
+            });
+            if (string.IsNullOrEmpty(builtApk) || !File.Exists(builtApk))
+            {
+                ShowError("Сборка прошла, но .apk файл не создан. См. вывод выше.");
+                BuildBtn.IsEnabled = true; CancelBtn.IsEnabled = true; BuildProgress.IsVisible = false;
+                return;
+            }
+            if (!bundleInside)
+            {
+                ShowError("APK собран, но игра внутрь не попала (нет assets/GameBundle.zip).\nПересоберите ещё раз или сообщите разработчику.");
+                try { if (!string.IsNullOrEmpty(tempPublish)) Directory.Delete(tempPublish, true); } catch { }
+                try { if (!string.IsNullOrEmpty(tempZip) && File.Exists(tempZip)) File.Delete(tempZip); } catch { }
+                BuildBtn.IsEnabled = true; CancelBtn.IsEnabled = true; BuildProgress.IsVisible = false;
+                return;
+            }
+            await Task.Run(() =>
+            {
+                string dest = Path.Combine(gameOutputDir, safeName + ".apk");
+                File.Copy(builtApk!, dest, true);
                 try { if (!string.IsNullOrEmpty(tempPublish)) Directory.Delete(tempPublish, true); } catch { }
                 try { if (!string.IsNullOrEmpty(tempZip) && File.Exists(tempZip)) File.Delete(tempZip); } catch { }
             });
@@ -365,6 +370,68 @@ public partial class ExportApkDialog : Window
             ShowError("Ошибка сборки: " + ex.Message);
             BuildBtn.IsEnabled = true; CancelBtn.IsEnabled = true; BuildProgress.IsVisible = false;
         }
+    }
+
+    private sealed record AndroidEnvCheck(bool WorkloadOk, bool Sdk11Ok, string Details);
+
+    private static async Task<(string Output, bool TimedOut)> RunDotnetAsync(string args, int timeoutMs)
+    {
+        var outSb = new StringBuilder();
+        var errSb = new StringBuilder();
+        try
+        {
+            using var proc = new Process
+            {
+                StartInfo = new ProcessStartInfo("dotnet", args)
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8
+                }
+            };
+            proc.OutputDataReceived += (_, e) => { if (e.Data != null) outSb.AppendLine(e.Data); };
+            proc.ErrorDataReceived += (_, e) => { if (e.Data != null) errSb.AppendLine(e.Data); };
+            if (!proc.Start()) return ("dotnet: не удалось запустить процесс", false);
+            proc.BeginOutputReadLine();
+            proc.BeginErrorReadLine();
+            using var cts = new CancellationTokenSource(timeoutMs);
+            try
+            {
+                await proc.WaitForExitAsync(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                try { proc.Kill(true); } catch { }
+                return (outSb.ToString() + "\n" + errSb.ToString(), true);
+            }
+            return (outSb.ToString() + "\n" + errSb.ToString(), false);
+        }
+        catch (Exception ex)
+        {
+            return ("dotnet: " + ex.Message, false);
+        }
+    }
+
+    private static async Task<AndroidEnvCheck> CheckAndroidEnvAsync()
+    {
+        var (versionOut, _) = await RunDotnetAsync("--version", 20000);
+        var (sdksOut, _) = await RunDotnetAsync("--list-sdks", 20000);
+        var (workloadOut, workloadTimedOut) = await RunDotnetAsync("workload list", 90000);
+        bool workloadOk = workloadOut.IndexOf("android", StringComparison.OrdinalIgnoreCase) >= 0;
+        bool sdk11Ok = false;
+        foreach (var line in (versionOut + "\n" + sdksOut).Split('\n'))
+        {
+            if (Regex.IsMatch(line.Trim(), @"^(1[1-9]|[2-9][0-9])\.\d+")) { sdk11Ok = true; break; }
+        }
+        string version = versionOut.Split('\n').FirstOrDefault(s => !string.IsNullOrWhiteSpace(s))?.Trim() ?? "?";
+        var sb = new StringBuilder();
+        sb.Append("\ndotnet --version: ").Append(version);
+        if (workloadTimedOut) sb.Append("\n(dotnet workload list превысил таймаут 90с)");
+        sb.Append("\nУстановленные SDK:\n").Append(sdksOut.Trim());
+        return new AndroidEnvCheck(workloadOk, sdk11Ok, sb.ToString());
     }
 
     private void SetStatus(string message, bool success)

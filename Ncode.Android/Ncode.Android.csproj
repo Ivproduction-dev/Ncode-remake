@@ -13,6 +13,13 @@
     <CheckEolWorkloads>false</CheckEolWorkloads>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(AndroidScreenOrientation)' == 'Portrait'">
+    <DefineConstants>$(DefineConstants);SCREEN_PORTRAIT</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AndroidScreenOrientation)' == 'Landscape'">
+    <DefineConstants>$(DefineConstants);SCREEN_LANDSCAPE</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Ncode.Core\Ncode.Core.csproj" />
   </ItemGroup>
